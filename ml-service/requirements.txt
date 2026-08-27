@@ -1,0 +1,10 @@
+tqdm
+matplotlib
+numpy
+pandas
+torch
+transformers
+fastapi
+uvicorn
+pydantic
+httpx
