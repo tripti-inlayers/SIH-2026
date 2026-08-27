@@ -1,8 +1,12 @@
 from app.services.threat_intel.base import ThreatIntelProvider, ThreatIntelResult, ThreatIntelVerdict
 from urllib.parse import urlparse
 
-DEMO_SAFE_DOMAINS = {"indiapost.gov.in", "www.indiapost.gov.in"}
-DEMO_MALICIOUS_DOMAINS = {"secure-bank0findia-verify.xyz", "bank0findia.xyz"}
+DEMO_SAFE_DOMAINS = {"indiapost.gov.in", "www.indiapost.gov.in", "amazon.in", "bescom.co.in"}
+DEMO_MALICIOUS_DOMAINS = {
+    "secure-bank0findia-verify.xyz", "bank0findia.xyz", 
+    "incometaxindia-refund-gov.in.weebly.com",
+    "sbi-yono-kyc-update.com", "pay-electricity-bill-online.xyz"
+}
 
 class MockThreatIntelProvider:
     async def lookup(self, url: str) -> ThreatIntelResult:
@@ -18,7 +22,7 @@ class MockThreatIntelProvider:
                 source="mock",
                 detail="Domain matched mock clean domain database."
             )
-        elif host in DEMO_MALICIOUS_DOMAINS:
+        elif host in DEMO_MALICIOUS_DOMAINS or any(d in host for d in ["free-iphone-win", "weebly"]):
             return ThreatIntelResult(
                 verdict=ThreatIntelVerdict.KNOWN_MALICIOUS,
                 source="mock",

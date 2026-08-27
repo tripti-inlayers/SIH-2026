@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     SUPABASE_URL: Optional[str] = None
     SUPABASE_KEY: Optional[str] = None
     CORS_ALLOWED_ORIGINS: str = "*"
-    RISK_THRESHOLD_LOW_MAX: int = 39
-    RISK_THRESHOLD_SUSPICIOUS_MAX: int = 69
+    RISK_THRESHOLD_LOW_MAX: int = 49
+    RISK_THRESHOLD_SUSPICIOUS_MAX: int = 79
     REQUEST_TIMEOUT_SECONDS: float = 5.0
     THREAT_INTEL_PROVIDER: str = "mock"
+    GOOGLE_WEBRISK_API_KEY: Optional[str] = None
     IDENTITY_PROVIDER: str = "mock"
     REPORTING_PROVIDER: str = "mock"
     LOG_LEVEL: str = "INFO"

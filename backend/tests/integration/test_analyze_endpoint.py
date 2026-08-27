@@ -41,12 +41,15 @@ async def test_analyze_endpoint_with_ml_spam():
         "timestamp_epoch_millis": 1700000000000,
         "source": "SMS"
     }
-    
-    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+    with patch("app.services.ml_analysis.httpx.AsyncClient") as mock_client_class:
+        mock_instance = AsyncMock()
+        mock_client_class.return_value.__aenter__.return_value = mock_instance
+        
         mock_response = MagicMock()
         mock_response.json.return_value = {"prediction": 1, "label": "spam", "confidence": 0.9}
         mock_response.raise_for_status.return_value = None
-        mock_post.return_value = mock_response
+        mock_response.status_code = 200
+        mock_instance.post.return_value = mock_response
 
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             resp = await client.post("/api/v1/analyze", json=payload)

@@ -23,6 +23,9 @@ class AnalysisOrchestrator:
         
         if settings.THREAT_INTEL_PROVIDER == "rdap":
             self.threat_intel_provider = RdapThreatIntelProvider()
+        elif settings.THREAT_INTEL_PROVIDER == "google_webrisk":
+            from app.services.threat_intel.google_webrisk import GoogleWebRiskProvider
+            self.threat_intel_provider = GoogleWebRiskProvider()
         else:
             self.threat_intel_provider = MockThreatIntelProvider()
 
@@ -86,7 +89,7 @@ class AnalysisOrchestrator:
                         code="REPUTATION_MALICIOUS",
                         description="This domain is flagged as known malicious by threat intelligence.",
                         technical_detail=f"Provider '{threat_intel_res.source}': {threat_intel_res.detail}",
-                        weight=0.35,
+                        weight=0.80,
                         triggered=True
                     ))
                 elif verdict == ThreatIntelVerdict.KNOWN_SAFE:

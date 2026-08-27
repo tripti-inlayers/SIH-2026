@@ -41,12 +41,13 @@ class MockSpamMessageDetector:
 @app.on_event("startup")
 async def load_model():
     global detector
+    model_path = "/Users/vaibhav/.gemini/antigravity/scratch/phishing-detector-ai/finetuned_model"
     if MOCK_MODE:
-        logging.info("Initializing MOCK RoBERTa model...")
-        detector = MockSpamMessageDetector(model_path="mshenoda/roberta-spam")
+        logging.info(f"Initializing MOCK RoBERTa model from {model_path}...")
+        detector = MockSpamMessageDetector(model_path=model_path)
     else:
-        logging.info("Loading RoBERTa model...")
-        detector = SpamMessageDetector(model_path="mshenoda/roberta-spam")
+        logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
+        detector = SpamMessageDetector(model_path=model_path)
     logging.info("Model loaded successfully.")
 
 @app.post("/predict", response_model=PredictResponse)
