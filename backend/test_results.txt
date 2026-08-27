@@ -1,0 +1,87 @@
+Running 1000 cases to calculate accuracy...
+Processed 200/1000 cases...
+Processed 400/1000 cases...
+Processed 600/1000 cases...
+Processed 800/1000 cases...
+Processed 1000/1000 cases...
+
+========================================
+        TEST RESULTS (1000 Cases)       
+========================================
+Overall Accuracy: 100.00%
+
+Performance by Category:
+ - LOW: 100.00% (400/400)
+ - SUSPICIOUS: 100.00% (312/312)
+ - HIGH: 100.00% (288/288)
+
+Confusion Matrix (True \ Predicted):
+True \ Pred     | LOW        | SUSPICIOUS | HIGH      
+-------------------------------------------------------
+LOW             | 400        | 0          | 0         
+SUSPICIOUS      | 0          | 312        | 0         
+HIGH            | 0          | 0          | 288       
+
+========================================
+        20 SAMPLE EXAMPLES       
+========================================
+[1] Text: Action required: confirm your delivery details. http://track-parcel-update.tk/confirm
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
+[2] Text: URGENT: Your bank account will be suspended. Verify your PIN immediately to avoid blocking. http://secure-bank0findia-verify.xyz/login
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[3] Text: Dear customer, you have 1000 reward points expiring today. http://redeem-points-now.xyz
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
+[4] Text: Win a free iPhone! Click here now to claim. http://free-iphone-win-1687.tk
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[5] Text: Hi Amit, your OTP for login is 207170.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[6] Text: Salary of Rs 31570 credited to your A/c XX3799.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[7] Text: Dear SBI User, your YONO account is blocked. Update PAN card link: http://sbi-yono-kyc-update.com/login
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[8] Text: Your package from Amazon is out for delivery today. https://amazon.in/track/1369
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[9] Text: Action required: confirm your delivery details. http://track-parcel-update.tk/confirm
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
+[10] Text: Dear customer, you have 1000 reward points expiring today. http://redeem-points-now.xyz
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
+[11] Text: Hi Priya, your OTP for login is 177202.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[12] Text: Win a free iPhone! Click here now to claim. http://free-iphone-win-3115.tk
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[13] Text: Action required: confirm your delivery details. http://track-parcel-update.tk/confirm
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
+[14] Text: Salary of Rs 15099 credited to your A/c XX3006.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[15] Text: URGENT: Your bank account will be suspended. Verify your PIN immediately to avoid blocking. http://secure-bank0findia-verify.xyz/login
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[16] Text: Salary of Rs 11620 credited to your A/c XX3438.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[17] Text: Your electricity power will be disconnected at 9:30 PM tonight. Call officer at 9860765101 or pay here. http://pay-electricity-bill-online.xyz
+    Expected: HIGH | Predicted: HIGH
+----------------------------------------
+[18] Text: Salary of Rs 40135 credited to your A/c XX8962.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[19] Text: Salary of Rs 31605 credited to your A/c XX2710.
+    Expected: LOW | Predicted: LOW
+----------------------------------------
+[20] Text: Dear customer, you have 1000 reward points expiring today. http://redeem-points-now.xyz
+    Expected: SUSPICIOUS | Predicted: SUSPICIOUS
+----------------------------------------
