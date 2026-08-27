@@ -10,6 +10,7 @@ from app.services.threat_intel.mock_provider import MockThreatIntelProvider
 from app.services.threat_intel.rdap_provider import RdapThreatIntelProvider
 from app.services.identity.dlt_mock_provider import DltMockIdentityProvider
 from app.services.risk_fusion import RiskFusionEngine
+from app.services.ml_analysis import MlAnalysisService
 from app.repositories.analysis_repository import get_analysis_repository
 from app.config import settings
 from app.core.logging import logger
@@ -18,6 +19,7 @@ class AnalysisOrchestrator:
     def __init__(self):
         self.message_service = MessageAnalysisService()
         self.url_service = UrlAnalysisService()
+        self.ml_service = MlAnalysisService()
         
         if settings.THREAT_INTEL_PROVIDER == "rdap":
             self.threat_intel_provider = RdapThreatIntelProvider()
@@ -44,6 +46,17 @@ class AnalysisOrchestrator:
             logger.error(f"Message analysis failed or timed out: {e}")
             degraded = True
             degraded_reasons.append("message_analysis_timeout")
+
+        # 1.5. ML Model Signals
+        try:
+            ml_task = asyncio.create_task(self.ml_service.analyze(request.text))
+            ml_signal = await asyncio.wait_for(ml_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
+            if ml_signal:
+                all_signals.append(ml_signal)
+        except Exception as e:
+            logger.error(f"ML analysis failed or timed out: {e}")
+            degraded = True
+            degraded_reasons.append("ml_analysis_timeout")
 
         # 2. URL Signals
         primary_url = request.urls[0] if request.urls else None

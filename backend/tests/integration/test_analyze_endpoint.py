@@ -28,3 +28,31 @@ async def test_analyze_endpoint_success():
         assert "risk_level" in data
         assert "risk_score" in data
         assert data["risk_level"] == "LOW"
+
+from unittest.mock import patch, AsyncMock, MagicMock
+
+@pytest.mark.asyncio
+async def test_analyze_endpoint_with_ml_spam():
+    payload = {
+        "message_id": "MSG-002",
+        "text": "URGENT: Click here http://bad.com",
+        "urls": ["http://bad.com"],
+        "sender_id": "UNKNOWN",
+        "timestamp_epoch_millis": 1700000000000,
+        "source": "SMS"
+    }
+    
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"prediction": 1, "label": "spam", "confidence": 0.9}
+        mock_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_response
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/api/v1/analyze", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            # Ensure the ML signal was added and boosted risk
+            ml_signal = next((s for s in data["signals"] if s["code"] == "AI_SPAM_DETECTED"), None)
+            assert ml_signal is not None
+            assert ml_signal["triggered"] is True

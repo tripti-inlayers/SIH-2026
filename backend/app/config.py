@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     IDENTITY_PROVIDER: str = "mock"
     REPORTING_PROVIDER: str = "mock"
     LOG_LEVEL: str = "INFO"
+    ML_SERVICE_URL: str = "http://localhost:8001"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
