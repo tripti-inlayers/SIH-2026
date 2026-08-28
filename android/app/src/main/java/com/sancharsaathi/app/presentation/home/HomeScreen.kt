@@ -1,6 +1,5 @@
 package com.sancharsaathi.app.presentation.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,15 +7,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -40,6 +38,7 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var manualInputText by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -61,6 +60,9 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.refreshInbox() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh SMS feed")
+                    }
                     IconButton(onClick = onNavigateToHistory) {
                         Icon(Icons.Default.History, contentDescription = "History")
                     }
@@ -77,7 +79,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Protection Active status card
+            // 1. Protection Active Status Card
             item {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -108,7 +110,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Your messages and links are checked for common phishing and scam signals.",
+                                text = "Supported incoming messages are checked automatically.",
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -118,64 +120,80 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Demo Scenario Buttons
+            // 2. Manual Analysis Input Card
             item {
                 Text(
-                    text = "Try Demo Scenarios",
+                    text = "Analyze Message or Link",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(1)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.lowSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Text("Low Risk", color = RiskColors.lowText, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(2)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.suspiciousSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Text("Suspicious", color = RiskColors.suspiciousText, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(3)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.highSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 48.dp)
-                    ) {
-                        Text("High Risk", color = RiskColors.highText, fontWeight = FontWeight.Bold)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Paste a suspicious message or link below",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = manualInputText,
+                            onValueChange = { manualInputText = it },
+                            placeholder = { Text("Paste SMS, WhatsApp message, email, or URL here...") },
+                            minLines = 3,
+                            maxLines = 5,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        PrimaryButton(
+                            text = "Analyze",
+                            onClick = {
+                                if (manualInputText.isNotBlank()) {
+                                    val req = viewModel.createManualAnalysisRequest(manualInputText)
+                                    manualInputText = ""
+                                    onNavigateToAnalyzing(req)
+                                }
+                            },
+                            enabled = manualInputText.isNotBlank()
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // Recent activity
+            // 3. Recent Message Detections Header
             item {
-                Text(
-                    text = "Recent Activity",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Recent Message Detections",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = onNavigateToHistory) {
+                        Text("See All")
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
+            // 4. Recent Detections List
             when (uiState) {
                 is HomeUiState.Loading -> {
                     item {
@@ -186,7 +204,7 @@ fun HomeScreen(
                     val list = (uiState as HomeUiState.Success).recentAnalyses
                     if (list.isEmpty()) {
                         item {
-                            EmptyState(message = "No messages checked yet.")
+                            EmptyState(message = "No messages detected yet. Incoming SMS will appear here automatically.")
                         }
                     } else {
                         items(list) { item ->
@@ -208,6 +226,12 @@ fun RecentActivityCard(
     result: RiskResult,
     onClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val contactName = remember(result.sender) {
+        com.sancharsaathi.app.data.local.ContactHelper.getContactName(context, result.sender)
+    }
+    val displayName = contactName ?: result.sender ?: "Unknown Sender"
+
     Card(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
@@ -220,20 +244,53 @@ fun RecentActivityCard(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = result.sender ?: "Unknown Sender",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                val formattedTime = remember(result.timestamp) {
+                    if (result.timestamp > 0L) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
+                            sdf.format(java.util.Date(result.timestamp))
+                        } catch (e: Exception) {
+                            ""
+                        }
+                    } else ""
+                }
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (contactName != null && result.sender != null && result.sender != contactName) {
+                            Text(
+                                text = result.sender,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (formattedTime.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = formattedTime,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = result.detectedUrl ?: (result.reasons.firstOrNull() ?: "Message analysis"),
+                    text = result.smsBody ?: (result.detectedUrl ?: (result.reasons.firstOrNull() ?: "Message analysis")),
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
+                    maxLines = 2
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            RiskBadge(riskLevel = result.riskLevel, riskScore = result.riskScore)
+            RiskBadge(riskLevel = result.riskLevel, riskScore = result.riskScore, degraded = result.degraded)
         }
     }
 }

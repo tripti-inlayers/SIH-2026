@@ -14,5 +14,7 @@ data class RiskResult(
     val sender: String?,
     val modelVersion: String,
     val degraded: Boolean = false,
-    val degradedReason: String? = null
+    val degradedReason: String? = null,
+    val smsBody: String? = null,
+    val timestamp: Long = 0L
 )

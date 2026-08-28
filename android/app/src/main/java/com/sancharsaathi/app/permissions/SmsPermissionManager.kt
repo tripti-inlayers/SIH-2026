@@ -8,7 +8,8 @@ import androidx.core.content.ContextCompat
 object SmsPermissionManager {
     val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.RECEIVE_SMS,
-        Manifest.permission.READ_SMS
+        Manifest.permission.READ_SMS,
+        Manifest.permission.READ_CONTACTS
     )
 
     fun hasSmsPermissions(context: Context): Boolean {

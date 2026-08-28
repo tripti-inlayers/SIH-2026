@@ -27,3 +27,4 @@ class HealthResponse(BaseModel):
     threat_intel_provider: str
     identity_provider: str
     version: str
+    ml_service: Optional[dict] = None

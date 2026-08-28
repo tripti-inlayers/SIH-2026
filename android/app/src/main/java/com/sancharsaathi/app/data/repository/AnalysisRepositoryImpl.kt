@@ -16,6 +16,7 @@ class AnalysisRepositoryImpl(
 ) : AnalysisRepository {
 
     override suspend fun analyzeContent(request: AnalysisRequest): NetworkResult<RiskResult> {
+        android.util.Log.d("SancharSaathiAnalysis", "ANALYSIS_START: msgId=${request.messageId}, sender=${request.senderId}, source=${request.source.name}, hasUrl=${request.urls.isNotEmpty()}")
         return try {
             val dtoRequest = AnalyzeRequestDto(
                 messageId = request.messageId,
@@ -27,32 +28,58 @@ class AnalysisRepositoryImpl(
                 timestampEpochMillis = request.timestampEpochMillis,
                 source = request.source.name
             )
+            android.util.Log.d("SancharSaathiAnalysis", "BACKEND_ANALYSIS_STARTED: endpoint=/api/v1/analyze, requestCreated=true")
             val response = apiService.analyze(dtoRequest)
+            android.util.Log.d("SancharSaathiAnalysis", "BACKEND_ANALYSIS_HTTP_STATUS=${response.code()}")
             if (response.isSuccessful && response.body() != null) {
-                val result = mapDtoToDomain(response.body()!!)
-                historyStore.add(result)
+                val dto = response.body()!!
+                android.util.Log.d("SancharSaathiAnalysis", "BACKEND_RAW_RESPONSE_RECEIVED=true")
+                android.util.Log.d("SancharSaathiAnalysis", "BACKEND_SCORE=${dto.riskScore}, BACKEND_RISK_LEVEL=${dto.riskLevel}, BACKEND_CONFIDENCE=${dto.confidence}, BACKEND_SIGNALS_COUNT=${dto.signals.size}")
+                val result = mapDtoToDomain(dto)
+                android.util.Log.d("SancharSaathiAnalysis", "FINAL_RISK_SCORE=${result.riskScore}, FINAL_RISK_LEVEL=${result.riskLevel}")
+                historyStore.add(result, source = request.source)
                 NetworkResult.Success(result)
             } else {
+                val errBody = response.errorBody()?.string() ?: ""
+                android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_FAILED: status=${response.code()}, error=$errBody")
                 NetworkResult.Failure(
                     reason = FailureReason.SERVER_ERROR,
-                    message = "Server returned error status ${response.code()}"
+                    message = "Server returned error status ${response.code()}: $errBody"
                 )
             }
         } catch (e: SocketTimeoutException) {
-            NetworkResult.Failure(
-                reason = FailureReason.TIMEOUT,
-                message = "Connection timed out while analyzing message."
-            )
+            android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_TIMEOUT: ${e.message}. Executing OnDeviceSecurityEngine...")
+            val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                analysisId = request.messageId,
+                text = request.text,
+                sender = request.senderId,
+                timestamp = request.timestampEpochMillis,
+                source = request.source
+            ).copy(degraded = true, degradedReason = "offline_on_device_fallback")
+            historyStore.add(onDeviceResult, source = request.source)
+            NetworkResult.Success(onDeviceResult)
         } catch (e: IOException) {
-            NetworkResult.Failure(
-                reason = FailureReason.NO_CONNECTION,
-                message = "Full security analysis is currently unavailable."
-            )
+            android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_NO_CONNECTION: ${e.message}. Executing OnDeviceSecurityEngine...")
+            val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                analysisId = request.messageId,
+                text = request.text,
+                sender = request.senderId,
+                timestamp = request.timestampEpochMillis,
+                source = request.source
+            ).copy(degraded = true, degradedReason = "offline_on_device_fallback")
+            historyStore.add(onDeviceResult, source = request.source)
+            NetworkResult.Success(onDeviceResult)
         } catch (e: Exception) {
-            NetworkResult.Failure(
-                reason = FailureReason.UNKNOWN,
-                message = e.message ?: "An unexpected network error occurred."
-            )
+            android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_UNKNOWN_ERROR: ${e.message}. Executing OnDeviceSecurityEngine...")
+            val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                analysisId = request.messageId,
+                text = request.text,
+                sender = request.senderId,
+                timestamp = request.timestampEpochMillis,
+                source = request.source
+            ).copy(degraded = true, degradedReason = "offline_on_device_fallback")
+            historyStore.add(onDeviceResult, source = request.source)
+            NetworkResult.Success(onDeviceResult)
         }
     }
 

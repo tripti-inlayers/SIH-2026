@@ -22,6 +22,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        if (!com.sancharsaathi.app.permissions.SmsPermissionManager.hasSmsPermissions(this)) {
+            permissionLauncher.launch(com.sancharsaathi.app.permissions.SmsPermissionManager.REQUIRED_PERMISSIONS)
+        }
+
         setContent {
             SancharSaathiTheme {
                 Surface(

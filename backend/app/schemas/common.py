@@ -8,8 +8,11 @@ class RiskLevel(str, Enum):
 
 class CaptureSource(str, Enum):
     SMS = "SMS"
+    REAL_SMS = "REAL_SMS"
     DEMO = "DEMO"
     SHARED = "SHARED"
+    MANUAL_INPUT = "MANUAL_INPUT"
+    URL_ANALYSIS = "URL_ANALYSIS"
 
 class RiskSignal(BaseModel):
     category: str

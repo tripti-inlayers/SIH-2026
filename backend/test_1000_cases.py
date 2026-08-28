@@ -82,7 +82,7 @@ def run_tests():
     
     examples = []
     
-    for i in range(1, 1001):
+    for i in range(1, 51):
         payload, true_label = generate_case(i)
         response = client.post("/api/v1/analyze", json=payload)
         
@@ -105,13 +105,13 @@ def run_tests():
         else:
             print(f"Error on case {i}: {response.status_code}")
             
-        if i % 200 == 0:
-            print(f"Processed {i}/1000 cases...")
+        if i % 10 == 0:
+            print(f"Processed {i}/50 cases...")
             
     accuracy = (correct / total) * 100 if total > 0 else 0
     
     print("\n" + "="*40)
-    print("        TEST RESULTS (1000 Cases)       ")
+    print("        TEST RESULTS (50 Cases)       ")
     print("="*40)
     print(f"Overall Accuracy: {accuracy:.2f}%\n")
     

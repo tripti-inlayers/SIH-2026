@@ -19,8 +19,45 @@ import com.sancharsaathi.app.presentation.theme.RiskColors
 fun RiskBadge(
     riskLevel: RiskLevel,
     riskScore: Int,
+    degraded: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    if (riskScore == -2) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .semantics { contentDescription = "Analyzing" }
+                .background(RiskColors.lowSurface, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "Analyzing...",
+                color = RiskColors.lowText,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+        return
+    }
+
+    if (riskScore < 0) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier
+                .semantics { contentDescription = "Analysis Unavailable" }
+                .background(RiskColors.lowSurface, shape = RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "Analysis Unavailable",
+                color = RiskColors.lowText,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+        return
+    }
+
     val (bgColor, textColor, labelText) = when (riskLevel) {
         RiskLevel.LOW -> Triple(RiskColors.lowSurface, RiskColors.lowText, "Low Risk")
         RiskLevel.SUSPICIOUS -> Triple(RiskColors.suspiciousSurface, RiskColors.suspiciousText, "Looks Suspicious")

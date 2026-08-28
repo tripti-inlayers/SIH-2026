@@ -58,10 +58,10 @@ fun SancharSaathiNavGraph(
     if (showPermissionRationale) {
         AlertDialog(
             onDismissRequest = { showPermissionRationale = false },
-            title = { Text("SMS Protection Permission") },
+            title = { Text("SMS & Contacts Protection Permissions") },
             text = {
                 Text(
-                    "SancharSaathi uses SMS permissions to scan incoming messages for phishing links and scam language. " +
+                    "SancharSaathi uses SMS and Contact permissions to scan incoming messages for phishing links and display sender names accurately. " +
                     "Granting this permission is optional — Demo Mode and Share-to-App will continue to work regardless."
                 )
             },

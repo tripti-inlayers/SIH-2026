@@ -40,15 +40,26 @@ class MockSpamMessageDetector:
 
 @app.on_event("startup")
 async def load_model():
-    global detector
+    global detector, MOCK_MODE
     model_path = "./finetuned_model"
-    if MOCK_MODE:
-        logging.info(f"Initializing MOCK RoBERTa model from {model_path}...")
-        detector = MockSpamMessageDetector(model_path=model_path)
+    if not MOCK_MODE:
+        try:
+            import os
+            if not os.path.exists(model_path):
+                logging.info(f"Finetuned checkpoint {model_path} not found yet. Loading base model 'mshenoda/roberta-spam'...")
+                model_path = "mshenoda/roberta-spam"
+            else:
+                logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
+            detector = SpamMessageDetector(model_path=model_path)
+            logging.info("Real RoBERTa Neural Transformer Model loaded successfully. MOCK_MODE=False")
+        except Exception as e:
+            logging.warning(f"Could not load RoBERTa model ({e}). Falling back to MOCK mode.")
+            MOCK_MODE = True
+            detector = MockSpamMessageDetector(model_path=model_path)
     else:
-        logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
-        detector = SpamMessageDetector(model_path=model_path)
-    logging.info("Model loaded successfully.")
+        logging.info("Initializing MOCK RoBERTa model...")
+        detector = MockSpamMessageDetector(model_path=model_path)
+    logging.info("Model initialization complete.")
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
@@ -69,6 +80,15 @@ async def predict(request: PredictRequest):
     except Exception as e:
         logging.error(f"Inference failed: {e}")
         raise HTTPException(status_code=500, detail="Inference failed")
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "ok",
+        "mock_mode": MOCK_MODE,
+        "service": "ml-service",
+        "model_loaded": detector is not None
+    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

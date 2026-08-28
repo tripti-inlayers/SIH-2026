@@ -28,7 +28,15 @@ data class HealthResponseDto(
     @SerializedName("database") val database: String,
     @SerializedName("threat_intel_provider") val threatIntelProvider: String,
     @SerializedName("identity_provider") val identityProvider: String,
-    @SerializedName("version") val version: String
+    @SerializedName("version") val version: String,
+    @SerializedName("ml_service") val mlService: MlServiceStatusDto?
+)
+
+data class MlServiceStatusDto(
+    @SerializedName("status") val status: String,
+    @SerializedName("mock_mode") val mockMode: Boolean?,
+    @SerializedName("service") val service: String?,
+    @SerializedName("details") val details: String?
 )
 
 data class UrlAnalyzeRequestDto(

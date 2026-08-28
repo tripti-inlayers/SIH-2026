@@ -21,8 +21,10 @@ class SpamMessageDetector:
         random_seed(seed)
         self.seed = seed
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.tokenizer = RobertaTokenizer.from_pretrained(model_path)
-        self.model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=2)
+        import os
+        is_local = os.path.isdir(model_path) or os.path.exists(model_path)
+        self.tokenizer = RobertaTokenizer.from_pretrained(model_path, local_files_only=is_local)
+        self.model = RobertaForSequenceClassification.from_pretrained(model_path, num_labels=2, local_files_only=is_local)
         self.model = self.model.to(self.device)
         self.max_length = max_length
     
@@ -274,6 +276,8 @@ class SpamMessageDetector:
         self.tokenizer.save_pretrained(model_path)
 
     def load_model(self, model_path):
-        self.model = RobertaForSequenceClassification.from_pretrained(model_path)
-        self.tokenizer = RobertaTokenizer.from_pretrained(model_path)
+        import os
+        is_local = os.path.isdir(model_path) or os.path.exists(model_path)
+        self.model = RobertaForSequenceClassification.from_pretrained(model_path, local_files_only=is_local)
+        self.tokenizer = RobertaTokenizer.from_pretrained(model_path, local_files_only=is_local)
         self.model = self.model.to(self.device)
