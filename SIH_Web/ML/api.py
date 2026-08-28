@@ -1,5 +1,6 @@
 import logging
 import uvicorn
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -43,47 +44,64 @@ class MockSpamMessageDetector:
             return prediction, probs
         return prediction
 
-import os
-
 @app.on_event("startup")
 async def load_model():
     global detector
     model_path = "./finetuned_model"
-    
-    # Fallback to mock if directory doesn't exist or is empty
-    model_exists = os.path.exists(model_path) and os.path.isdir(model_path) and len(os.listdir(model_path)) > 0
-    
-    if MOCK_MODE or not model_exists:
-        logging.info(f"Initializing MOCK RoBERTa model (model_exists={model_exists})...")
+    if MOCK_MODE:
+        logging.info(f"Initializing MOCK RoBERTa model from {model_path}...")
         detector = MockSpamMessageDetector(model_path=model_path)
     else:
-        logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
         try:
+            logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
             detector = SpamMessageDetector(model_path=model_path)
         except Exception as e:
-            logging.error(f"Failed to load finetuned model: {e}. Falling back to MOCK detector.")
+            logging.warning(f"Could not load finetuned model from {model_path}: {e}. Falling back to MOCK mode.")
             detector = MockSpamMessageDetector(model_path=model_path)
     logging.info("Model loaded successfully.")
+
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     if not request.message or not request.message.strip():
-        raise HTTPException(status_code=400, detail="Message cannot be empty")
+        return PredictResponse(
+            prediction=0,
+            label="ham",
+            confidence=1.0
+        )
         
     try:
-        prediction, probs = detector.detect(request.message, return_probs=True)
+        # Enforce strict 800ms SLA timeout on RoBERTa inference
+        prediction, probs = await asyncio.wait_for(
+            asyncio.to_thread(detector.detect, request.message, True),
+            timeout=0.8
+        )
         # prediction is 1 for spam, 0 for ham
         label = "spam" if prediction == 1 else "ham"
-        confidence = probs[prediction]
+        confidence = float(probs[prediction])
         
         return PredictResponse(
             prediction=prediction,
             label=label,
             confidence=confidence
         )
+    except asyncio.TimeoutError:
+        logging.warning("RoBERTa inference exceeded 800ms SLA limit; returning fallback")
+        return PredictResponse(
+            prediction=0,
+            label="ham",
+            confidence=0.5
+        )
     except Exception as e:
         logging.error(f"Inference failed: {e}")
-        raise HTTPException(status_code=500, detail="Inference failed")
+        return PredictResponse(
+            prediction=0,
+            label="ham",
+            confidence=1.0
+        )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)

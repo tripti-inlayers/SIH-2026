@@ -1,0 +1,1461 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&family=Noto+Sans:wght@400;600;700&display=swap');
+
+:root {
+  --nsp-navy: #0A3D62;
+  --nsp-dark-blue: #062840;
+  --nsp-blue: #1E6F9F;
+  --nsp-light-blue: #E8F4F8;
+  --nsp-saffron: #E67E22;
+  --nsp-saffron-light: #FDF2E9;
+  --nsp-green: #27AE60;
+  --nsp-green-light: #EAFAF1;
+  --nsp-red: #C0392B;
+  --nsp-red-light: #FDEDEC;
+  --nsp-bg-body: #F4F7F9;
+  --nsp-card-bg: #FFFFFF;
+  --nsp-text-dark: #2C3E50;
+  --nsp-text-muted: #6C7A89;
+  --nsp-border: #DCE4EC;
+  --nsp-border-focus: #1E6F9F;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background-color: var(--nsp-bg-body);
+  color: var(--nsp-text-dark);
+  min-height: 100vh;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* ACCESSIBILITY FONT RESIZING */
+.gov-root.font-size-normal { font-size: 14px; }
+.gov-root.font-size-large { font-size: 15.5px; }
+.gov-root.font-size-larger { font-size: 17px; }
+
+.gov-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+}
+
+/* 1. TOP UTILITY STRIP (NSP Dark Strip) */
+.gov-top-bar {
+  background-color: #1A252F;
+  color: #ECF0F1;
+  padding: 0.35rem 0;
+  font-size: 0.8rem;
+  border-bottom: 2px solid var(--nsp-saffron);
+}
+
+.top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.govt-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.emblem-text {
+  font-weight: 700;
+  color: #FFF;
+}
+
+.ministry-text {
+  color: #BDC3C7;
+  font-size: 0.75rem;
+}
+
+.top-accessibility-links {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.acc-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.acc-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.lang-pill {
+  background: var(--nsp-blue);
+  color: #FFF;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* 2. MAIN LOGO HEADER */
+.gov-main-header {
+  background-color: #FFFFFF;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--nsp-border);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.header-layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.emblem-placeholder {
+  width: 54px;
+  height: 54px;
+  background: var(--nsp-light-blue);
+  border: 2px solid var(--nsp-blue);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--nsp-navy);
+}
+
+.portal-main-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--nsp-navy);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.portal-sub-title {
+  color: var(--nsp-text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.header-badges {
+  display: flex;
+  gap: 1rem;
+}
+
+.nic-badge, .digital-india-badge {
+  background: var(--nsp-light-blue);
+  border: 1px solid rgba(30, 111, 159, 0.25);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+
+.badge-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+}
+
+.badge-desc {
+  font-size: 0.7rem;
+  color: var(--nsp-text-muted);
+}
+
+/* 3. PRIMARY NAVBAR (NSP Style Navy Blue Bar) */
+.gov-navbar {
+  background-color: var(--nsp-navy);
+  color: #FFF;
+  border-top: 2px solid var(--nsp-saffron);
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-menu {
+  list-style: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item a {
+  display: block;
+  padding: 0.85rem 1.1rem;
+  color: #ECF0F1;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active a, .nav-item a:hover {
+  background-color: var(--nsp-dark-blue);
+  color: #FFF;
+  border-bottom: 3px solid var(--nsp-saffron);
+}
+
+.mobile-nav-toggle-row {
+  display: none;
+}
+
+.emergency-contact {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #F1C40F;
+  white-space: nowrap;
+}
+
+/* MOBILE TAB STRIP */
+.mobile-tab-strip {
+  display: none;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.5rem;
+  background: #FFFFFF;
+  border: 1px solid var(--nsp-border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nsp-text-dark);
+  cursor: pointer;
+  min-height: 46px;
+  transition: all 0.2s ease;
+}
+
+.mobile-tab-btn.active {
+  background: var(--nsp-navy);
+  color: #FFFFFF;
+  border-color: var(--nsp-navy);
+  box-shadow: 0 2px 6px rgba(10, 61, 98, 0.25);
+}
+
+/* 4. ANNOUNCEMENT TICKER */
+.gov-announcement-strip {
+  background: var(--nsp-saffron-light);
+  border-bottom: 1px solid #FAD7A0;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+}
+
+.marquee-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.announcement-tag {
+  background: var(--nsp-saffron);
+  color: #FFF;
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.announcement-text {
+  color: #7E5109;
+  font-weight: 500;
+}
+
+/* 5. MAIN CONTENT LAYOUT */
+.main-body-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 1.75rem;
+  margin: 2rem auto;
+  align-items: start;
+}
+
+/* PORTAL CARDS (Clean White Institutional Panels) */
+.portal-card {
+  background: var(--nsp-card-bg);
+  border: 1px solid var(--nsp-border);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  overflow: hidden;
+}
+
+.card-header {
+  background-color: #F8FAFC;
+  border-bottom: 1px solid var(--nsp-border);
+  padding: 1.1rem 1.4rem;
+}
+
+.card-header h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+  margin-bottom: 0.2rem;
+}
+
+.card-subtext {
+  color: var(--nsp-text-muted);
+  font-size: 0.8rem;
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audit-status-badge {
+  background: var(--nsp-light-blue);
+  color: var(--nsp-blue);
+  border: 1px solid rgba(30, 111, 159, 0.3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+.card-body {
+  padding: 1.4rem;
+}
+
+/* FORM CONTROLS */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--nsp-text-dark);
+  margin-bottom: 0.4rem;
+}
+
+.text-danger { color: var(--nsp-red); }
+.text-muted { color: var(--nsp-text-muted); font-weight: 400; }
+.text-success { color: var(--nsp-green); }
+.text-warn { color: var(--nsp-saffron); }
+
+.gov-input, .gov-textarea {
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid var(--nsp-border);
+  border-radius: 4px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.9rem;
+  color: var(--nsp-text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.gov-input:focus, .gov-textarea:focus {
+  border-color: var(--nsp-border-focus);
+  box-shadow: 0 0 0 3px rgba(30, 111, 159, 0.15);
+}
+
+.field-hint {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--nsp-text-muted);
+}
+
+.text-counter {
+  text-align: right;
+  font-size: 0.75rem;
+  color: var(--nsp-text-muted);
+  margin-top: 0.25rem;
+}
+
+/* BUTTONS */
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.gov-btn {
+  padding: 0.65rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: var(--nsp-blue);
+  color: #FFFFFF;
+  border-color: #1A5E86;
+  flex: 1;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--nsp-navy);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background-color: #FFFFFF;
+  color: var(--nsp-text-dark);
+  border-color: var(--nsp-border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #F1F4F6;
+}
+
+/* PRESETS SECTION (NSP Accordion / Service Card Style) */
+.portal-presets-section {
+  margin-top: 1.75rem;
+  border-top: 1px solid var(--nsp-border);
+  padding-top: 1.25rem;
+}
+
+.presets-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.presets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.preset-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.85rem;
+  background: #F8FAFC;
+  border: 1px solid var(--nsp-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.preset-item:hover {
+  background: var(--nsp-light-blue);
+  border-color: var(--nsp-blue);
+  transform: translateX(2px);
+}
+
+.preset-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.preset-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--nsp-navy);
+}
+
+.preset-category {
+  font-size: 0.75rem;
+  color: var(--nsp-text-muted);
+}
+
+.preset-arrow {
+  color: var(--nsp-blue);
+}
+
+/* STATUS / EMPTY BOXES */
+.gov-status-box {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--nsp-border);
+  border-radius: 6px;
+  background: #FAFCFD;
+}
+
+.gov-status-box h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+  margin-top: 0.75rem;
+}
+
+.gov-status-box p {
+  color: var(--nsp-text-muted);
+  font-size: 0.85rem;
+  max-width: 400px;
+  margin: 0.4rem auto 0;
+}
+
+/* DEGRADATION BANNER */
+.degraded-alert {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--nsp-saffron-light);
+  border: 1px solid #FAD7A0;
+  color: #7E5109;
+  padding: 0.65rem 0.9rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+}
+
+/* OUTCOME SUMMARY BANNER */
+.outcome-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+  border-left: 6px solid;
+}
+
+.outcome-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.outcome-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.outcome-verdict-tag {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.outcome-decision {
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.outcome-level {
+  font-size: 0.8rem;
+}
+
+.outcome-score-box {
+  text-align: right;
+  padding-left: 1.5rem;
+  border-left: 1px solid rgba(0,0,0,0.1);
+}
+
+.score-num {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.score-denominator {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.7;
+}
+
+.score-text {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 0.2rem;
+}
+
+/* OUTCOME COLOR STYLES */
+.outcome-allow {
+  background-color: var(--nsp-green-light);
+  border-color: var(--nsp-green);
+  color: #196F3D;
+}
+
+.outcome-warn {
+  background-color: var(--nsp-saffron-light);
+  border-color: var(--nsp-saffron);
+  color: #935116;
+}
+
+.outcome-block {
+  background-color: var(--nsp-red-light);
+  border-color: var(--nsp-red);
+  color: #78281F;
+}
+
+/* SANDBOX PANEL */
+.sandbox-warning-box {
+  background: #FFFDF9;
+  border: 1px solid #F5CBA7;
+  border-radius: 6px;
+  padding: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.sandbox-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.sandbox-title h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--nsp-saffron);
+}
+
+.sandbox-desc {
+  font-size: 0.85rem;
+  color: var(--nsp-text-dark);
+  margin-bottom: 0.85rem;
+}
+
+.sandbox-btn-group {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn-proceed {
+  background-color: var(--nsp-green);
+  color: #FFF;
+  border-color: #1E8449;
+}
+.btn-proceed:hover { background-color: #1E8449; }
+
+.btn-dismiss {
+  background-color: #ECEFF1;
+  color: #37474F;
+  border-color: #CFD8DC;
+}
+.btn-dismiss:hover { background-color: #CFD8DC; }
+
+.btn-report {
+  background-color: var(--nsp-red);
+  color: #FFF;
+  border-color: #922B21;
+}
+.btn-report:hover { background-color: #922B21; }
+
+.sandbox-status-text {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--nsp-saffron);
+}
+
+.bypass-success-box, .report-success-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--nsp-green-light);
+  border: 1px solid #A9DFBF;
+  color: #196F3D;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+/* SYNTHESIS EXPLANATION BOX */
+.synthesis-box {
+  background: #F8FAFC;
+  border: 1px solid var(--nsp-border);
+  border-left: 4px solid var(--nsp-blue);
+  border-radius: 4px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+.synthesis-box h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.synthesis-box p {
+  font-size: 0.88rem;
+  color: var(--nsp-text-dark);
+}
+
+/* GOVERNMENT SIGNAL AUDIT TABLE */
+.signals-table-wrap h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--nsp-navy);
+  margin-bottom: 0.6rem;
+}
+
+.gov-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  background: #FFFFFF;
+  border: 1px solid var(--nsp-border);
+}
+
+.gov-table th {
+  background: #F1F4F8;
+  color: var(--nsp-navy);
+  font-weight: 700;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--nsp-border);
+}
+
+.gov-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--nsp-border);
+  vertical-align: middle;
+}
+
+.row-threat {
+  background: #FFFDF9;
+}
+
+.vector-icon-flex {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--nsp-navy);
+}
+
+.vector-desc {
+  color: var(--nsp-text-dark);
+}
+
+.vector-conf {
+  font-weight: 600;
+  color: var(--nsp-text-dark);
+}
+
+.weight-badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 3px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.weight-badge.danger {
+  background: var(--nsp-red-light);
+  color: var(--nsp-red);
+  border: 1px solid #F5B7B1;
+}
+
+.weight-badge.clean {
+  background: #F1F4F8;
+  color: var(--nsp-text-muted);
+}
+
+/* 6. STATISTICAL METRICS (NSP Blue Cards) */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin: 1rem auto 2.5rem;
+}
+
+.stat-card {
+  background: #FFFFFF;
+  border: 1px solid var(--nsp-border);
+  border-top: 3px solid var(--nsp-blue);
+  border-radius: 4px;
+  padding: 1.1rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.stat-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--nsp-navy);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--nsp-text-muted);
+  margin-top: 0.2rem;
+}
+
+/* 7. OFFICIAL FOOTER (NSP Multi-Column Navy Footer) */
+.gov-footer {
+  background-color: var(--nsp-dark-blue);
+  color: #BDC3C7;
+  border-top: 4px solid var(--nsp-saffron);
+  margin-top: 3rem;
+}
+
+.footer-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.5fr;
+  gap: 2rem;
+  padding: 2.5rem 1.25rem 2rem;
+}
+
+.footer-col h4 {
+  color: #FFFFFF;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 0.4rem;
+}
+
+.footer-col p {
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.footer-links li {
+  margin-bottom: 0.4rem;
+}
+
+.footer-links a {
+  color: #ECF0F1;
+  text-decoration: none;
+  font-size: 0.82rem;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--nsp-saffron);
+  text-decoration: underline;
+}
+
+.team-names {
+  color: #FFFFFF;
+  margin-bottom: 0.5rem;
+}
+
+.tech-stack {
+  font-size: 0.75rem;
+  color: #95A5A6;
+}
+
+.footer-bottom-bar {
+  background: #041826;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.75rem 0;
+  font-size: 0.75rem;
+}
+
+.bottom-bar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* =========================================================
+   COMPREHENSIVE MOBILE & TABLET RESPONSIVE RULES (<= 850px)
+========================================================= */
+@media (max-width: 850px) {
+  /* Header & Top Bar */
+  .gov-top-bar {
+    font-size: 0.72rem;
+  }
+  .ministry-text {
+    display: none;
+  }
+  .header-layout {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .header-brand-group {
+    gap: 0.75rem;
+  }
+  .emblem-placeholder {
+    width: 44px;
+    height: 44px;
+  }
+  .portal-main-title {
+    font-size: 1.25rem;
+  }
+  .portal-sub-title {
+    font-size: 0.75rem;
+  }
+  .header-badges {
+    display: none;
+  }
+
+  /* Mobile Navbar */
+  .mobile-nav-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.5rem 0;
+  }
+
+  .mobile-hamburger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #FFF;
+    border-radius: 4px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    min-height: 40px;
+  }
+
+  .nav-menu {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .nav-menu.mobile-open {
+    display: flex;
+  }
+
+  .nav-item a {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 0.75rem 0.5rem;
+  }
+
+  /* Mobile Tabs */
+  .mobile-tab-strip {
+    display: flex;
+  }
+
+  .main-body-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 1rem auto;
+  }
+
+  .input-card.mobile-hidden, .results-card.mobile-hidden {
+    display: none;
+  }
+  .input-card.mobile-visible, .results-card.mobile-visible {
+    display: block;
+  }
+
+  /* Outcome Banner */
+  .outcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .outcome-score-box {
+    border-left: none;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-left: 0;
+    padding-top: 0.75rem;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+
+  .score-text {
+    display: inline;
+    margin-left: 0.5rem;
+  }
+
+  /* Sandbox Actions */
+  .sandbox-btn-group {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .gov-btn {
+    min-height: 46px;
+    width: 100%;
+    font-size: 0.88rem;
+  }
+
+  /* Signals Table on Mobile: Horizontal scrollable table container */
+  .signals-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gov-table {
+    min-width: 500px;
+  }
+
+  /* Stats Section */
+  .stats-section {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin: 1rem auto 2rem;
+  }
+
+  .stat-num {
+    font-size: 1.25rem;
+  }
+
+  /* Footer */
+  .footer-layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.75rem 1rem;
+  }
+
+  .bottom-bar-inner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-section {
+    grid-template-columns: 1fr;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+  .gov-btn {
+    width: 100%;
+  }
+  .emergency-contact span {
+    font-size: 0.75rem;
+  }
+}
+
+/* NATIVE REAL-TIME SMS SHIELD STATUS BAR */
+.native-sms-status-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: all 0.2s ease;
+}
+
+.native-sms-status-bar.active {
+  background-color: #E8F8F5;
+  border: 1px solid #A3E4D7;
+  color: #0E6251;
+}
+
+.native-sms-status-bar.warning {
+  background-color: #FEF9E7;
+  border: 1px solid #F9E79F;
+  color: #7D6608;
+  cursor: pointer;
+}
+
+.native-sms-status-bar.warning:hover {
+  background-color: #FCF3CF;
+}
+
+.live-pulse-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #27AE60;
+  box-shadow: 0 0 0 rgba(39, 174, 96, 0.4);
+  animation: pulse-green 1.8s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(39, 174, 96, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(39, 174, 96, 0);
+  }
+}
+
+/* LIVE INTERCEPTED SMS TOAST */
+.sms-intercepted-toast {
+  margin-top: 0.75rem;
+  background: #EBF5FB;
+  border: 1px solid #AED6F1;
+  border-left: 4px solid var(--nsp-blue);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.toast-top-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: var(--nsp-navy);
+}
+
+.toast-left {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.toast-icon {
+  color: var(--nsp-blue);
+}
+
+.toast-sender {
+  background: var(--nsp-navy);
+  color: white;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: 0.2rem;
+}
+
+.toast-close-btn {
+  background: none;
+  border: none;
+  color: #7F8C8D;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.toast-close-btn:hover {
+  color: var(--nsp-navy);
+}
+
+.toast-snippet {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.82rem;
+  color: var(--nsp-text-dark);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* ON-DEVICE SMS INBOX SCANNER STYLES */
+.tab-danger-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #E74C3C;
+  border-radius: 50%;
+  margin-left: 0.35rem;
+  display: inline-block;
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.inbox-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.inbox-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-sm {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+}
+
+.inbox-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  background: #F8F9FA;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.inbox-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border-right: 1px solid #E5E7EB;
+}
+
+.inbox-stat-item:last-child {
+  border-right: none;
+}
+
+.inbox-stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--nsp-navy);
+  line-height: 1.1;
+}
+
+.inbox-stat-item.green .inbox-stat-val { color: #1E8449; }
+.inbox-stat-item.amber .inbox-stat-val { color: #D35400; }
+.inbox-stat-item.red .inbox-stat-val { color: #C0392B; }
+
+.inbox-stat-lbl {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--nsp-text-muted);
+  text-transform: uppercase;
+  margin-top: 0.15rem;
+}
+
+.inbox-messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.inbox-msg-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  transition: all 0.2s ease;
+}
+
+.inbox-msg-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.inbox-msg-card.threat-block {
+  border-left: 4px solid #E74C3C;
+  background: #FDEDEC;
+}
+
+.inbox-msg-card.threat-warn {
+  border-left: 4px solid #F39C12;
+  background: #FEF9E7;
+}
+
+.inbox-msg-card.threat-allow {
+  border-left: 4px solid #27AE60;
+  background: #E8F8F5;
+}
+
+.inbox-msg-card.live-received {
+  box-shadow: 0 0 0 2px #3498DB;
+  animation: highlightNew 2s ease;
+}
+
+@keyframes highlightNew {
+  from { background-color: #D4E6F1; }
+  to { background-color: #FFFFFF; }
+}
+
+.msg-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.msg-sender-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.msg-sender-badge {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--nsp-navy);
+  background: #EEF2F6;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.msg-live-pill {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #E74C3C;
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  animation: pulse-red 1.2s infinite;
+}
+
+.msg-date {
+  font-size: 0.72rem;
+  color: var(--nsp-text-muted);
+}
+
+.msg-content-text {
+  margin: 0.25rem 0 0.5rem 0;
+  font-size: 0.85rem;
+  color: var(--nsp-text-dark);
+  line-height: 1.45;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.status-pill.unverified {
+  background: #EDF2F7;
+  color: #4A5568;
+  border-color: #CBD5E0;
+}
+
+.status-pill.unverified:hover {
+  background: #E2E8F0;
+  color: #2D3748;
+}
+
+.status-pill.analyzing {
+  background: #EBF8FF;
+  color: #2B6CB0;
+  border-color: #BEE3F8;
+  cursor: default;
+}
+
+.status-pill.decision-block {
+  background: #C0392B;
+  color: white;
+}
+
+.status-pill.decision-warn {
+  background: #D35400;
+  color: white;
+}
+
+.status-pill.decision-allow {
+  background: #1E8449;
+  color: white;
+}
+
+.msg-explanation-bar {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed rgba(0,0,0,0.1);
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.exp-label {
+  font-weight: 700;
+  color: var(--nsp-navy);
+  margin-right: 0.25rem;
+}
+
+.exp-text {
+  color: #555;
+  flex: 1;
+}
+
+.view-audit-link {
+  background: none;
+  border: none;
+  color: var(--nsp-blue);
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.empty-inbox-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+
