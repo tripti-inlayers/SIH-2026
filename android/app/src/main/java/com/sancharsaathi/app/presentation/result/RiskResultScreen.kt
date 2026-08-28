@@ -11,6 +11,10 @@ import androidx.compose.ui.unit.dp
 import com.sancharsaathi.app.domain.model.RiskLevel
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.*
+import android.content.Intent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.OpenInNew
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -21,6 +25,7 @@ fun RiskResultScreen(
     onNavigateBack: () -> Unit,
     onNavigateToReport: (RiskResult) -> Unit
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var showVerifySheet by remember { mutableStateOf(false) }
 
@@ -147,6 +152,7 @@ fun ResultContent(
 
         if (result.detectedUrl != null) {
             item {
+                val context = LocalContext.current
                 Text(
                     text = "Detected Target URL",
                     style = MaterialTheme.typography.titleMedium,
@@ -156,13 +162,35 @@ fun ResultContent(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = MaterialTheme.shapes.small,
+                    onClick = {
+                        try {
+                            val gateIntent = Intent(context, com.sancharsaathi.app.presentation.linkgate.LinkGateActivity::class.java).apply {
+                                action = Intent.ACTION_VIEW
+                                data = android.net.Uri.parse(result.detectedUrl)
+                            }
+                            context.startActivity(gateIntent)
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "Could not open link gate: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
                 ) {
-                    Text(
-                        text = result.detectedUrl,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(12.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = result.detectedUrl,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew,
+                            contentDescription = "Inspect Link",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 // Dedicated PhishDestroy Threat Intelligence Card
