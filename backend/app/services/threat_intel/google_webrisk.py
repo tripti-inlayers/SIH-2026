@@ -1,61 +1,61 @@
 import httpx
-import logging
-from urllib.parse import quote_plus
-from app.services.threat_intel.base import ThreatIntelProvider, ThreatIntelResult, ThreatIntelVerdict
+from typing import Optional
+from app.services.threat_intel.base import ThreatIntelResult, ThreatIntelVerdict
 from app.config import settings
+from app.core.logging import logger
 
-logger = logging.getLogger(__name__)
+class GoogleWebRiskProvider:
+    """Live integration with Google Web Risk API."""
 
-class GoogleWebRiskProvider(ThreatIntelProvider):
-    def __init__(self):
-        self.api_key = getattr(settings, "GOOGLE_WEBRISK_API_KEY", None)
-        self.base_url = "https://webrisk.googleapis.com/v1/uris:search"
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or settings.GOOGLE_WEBRISK_API_KEY
 
     async def lookup(self, url: str) -> ThreatIntelResult:
         if not self.api_key:
-            logger.warning("Google Web Risk API key is missing. Falling back to UNKNOWN.")
+            logger.debug("Google Web Risk API key missing. Skipping Web Risk lookup.")
             return ThreatIntelResult(
                 verdict=ThreatIntelVerdict.UNKNOWN,
                 source="google_webrisk",
-                detail="API key not configured."
+                detail="Google Web Risk API key missing (skipping lookup)."
             )
 
+        api_url = "https://webrisk.googleapis.com/v1/uris:search"
+        params = {
+            "key": self.api_key,
+            "uri": url,
+            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE"]
+        }
+
         try:
-            params = {
-                "key": self.api_key,
-                "uri": url,
-                "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE"]
-            }
-            async with httpx.AsyncClient() as client:
-                response = await client.get(self.base_url, params=params, timeout=5.0)
-                response.raise_for_status()
-                data = response.json()
-                
-                # The Web Risk API returns a 'threat' object if a threat is found.
-                if "threat" in data:
-                    threat_types = data["threat"].get("threatTypes", [])
-                    return ThreatIntelResult(
-                        verdict=ThreatIntelVerdict.KNOWN_MALICIOUS,
-                        source="google_webrisk",
-                        detail=f"Flagged by Google Web Risk as: {', '.join(threat_types)}"
-                    )
+            async with httpx.AsyncClient(timeout=settings.THREAT_INTEL_TIMEOUT_SECONDS) as client:
+                resp = await client.get(api_url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    threat = data.get("threat")
+                    if threat and threat.get("threatTypes"):
+                        threat_types = ", ".join(threat["threatTypes"])
+                        return ThreatIntelResult(
+                            verdict=ThreatIntelVerdict.KNOWN_MALICIOUS,
+                            source="google_webrisk",
+                            detail=f"Google Web Risk flagged URL as malicious ({threat_types})."
+                        )
+                    else:
+                        return ThreatIntelResult(
+                            verdict=ThreatIntelVerdict.UNKNOWN,
+                            source="google_webrisk",
+                            detail="Google Web Risk returned no threat match."
+                        )
                 else:
+                    logger.warning(f"Google Web Risk returned status code {resp.status_code}")
                     return ThreatIntelResult(
-                        verdict=ThreatIntelVerdict.UNKNOWN,  # Web Risk doesn't guarantee safety
+                        verdict=ThreatIntelVerdict.UNKNOWN,
                         source="google_webrisk",
-                        detail="No threat found in Google Web Risk database."
+                        detail=f"Google Web Risk returned HTTP {resp.status_code}."
                     )
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Google Web Risk API error: {e.response.status_code}")
-            return ThreatIntelResult(
-                verdict=ThreatIntelVerdict.UNKNOWN,
-                source="google_webrisk",
-                detail=f"API returned status {e.response.status_code}"
-            )
         except Exception as e:
             logger.error(f"Google Web Risk lookup failed: {e}")
             return ThreatIntelResult(
                 verdict=ThreatIntelVerdict.UNKNOWN,
                 source="google_webrisk",
-                detail="Connection error"
+                detail=f"Google Web Risk lookup unavailable ({str(e)})"
             )

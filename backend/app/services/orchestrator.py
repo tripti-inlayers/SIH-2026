@@ -1,13 +1,14 @@
 import asyncio
 import uuid
+import re
 from typing import List, Optional
 from app.schemas.analyze import AnalyzeRequest, RiskResultResponse
 from app.schemas.common import RiskSignal
 from app.services.message_analysis import MessageAnalysisService
 from app.services.url_analysis import UrlAnalysisService
+from app.services.url_expansion import UrlExpanderService, ExpandedUrlResult
 from app.services.threat_intel.base import ThreatIntelVerdict
-from app.services.threat_intel.mock_provider import MockThreatIntelProvider
-from app.services.threat_intel.rdap_provider import RdapThreatIntelProvider
+from app.services.threat_intel.multi_provider import MultiThreatIntelProvider
 from app.services.identity.dlt_mock_provider import DltMockIdentityProvider
 from app.services.risk_fusion import RiskFusionEngine
 from app.services.ml_analysis import MlAnalysisService
@@ -19,16 +20,9 @@ class AnalysisOrchestrator:
     def __init__(self):
         self.message_service = MessageAnalysisService()
         self.url_service = UrlAnalysisService()
+        self.url_expander = UrlExpanderService()
         self.ml_service = MlAnalysisService()
-        
-        if settings.THREAT_INTEL_PROVIDER == "rdap":
-            self.threat_intel_provider = RdapThreatIntelProvider()
-        elif settings.THREAT_INTEL_PROVIDER == "google_webrisk":
-            from app.services.threat_intel.google_webrisk import GoogleWebRiskProvider
-            self.threat_intel_provider = GoogleWebRiskProvider()
-        else:
-            self.threat_intel_provider = MockThreatIntelProvider()
-
+        self.threat_intel_provider = MultiThreatIntelProvider()
         self.identity_provider = DltMockIdentityProvider()
         self.fusion_engine = RiskFusionEngine()
         self.repo = get_analysis_repository()
@@ -50,7 +44,7 @@ class AnalysisOrchestrator:
             degraded = True
             degraded_reasons.append("message_analysis_timeout")
 
-        # 1.5. ML Model Signals
+        # 1.5. ML Model Signals (Text sequence classification)
         try:
             ml_task = asyncio.create_task(self.ml_service.analyze(request.text))
             ml_signal = await asyncio.wait_for(ml_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
@@ -61,64 +55,102 @@ class AnalysisOrchestrator:
             degraded = True
             degraded_reasons.append("ml_analysis_timeout")
 
-        # 2. URL Signals
-        primary_url = request.urls[0] if request.urls else None
-        if request.urls:
-            try:
-                url_task = asyncio.create_task(
-                    asyncio.to_thread(self.url_service.analyze, primary_url)
-                )
-                url_signals = await asyncio.wait_for(url_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
-                all_signals.extend(url_signals)
-            except Exception as e:
-                logger.error(f"URL analysis failed or timed out: {e}")
-                degraded = True
-                degraded_reasons.append("url_analysis_timeout")
+        # Fallback URL Extractor: ensure domain-first URLs in request.text are parsed even if request.urls is empty
+        target_urls = list(request.urls or [])
+        url_pattern = r"(?:https?://|cutt\.ly/|bit\.ly/|tinyurl\.com/|t\.co/|(?:[a-zA-Z0-9-]+\.)+(?:com|ly|in|org|net|xyz|tk|top|io|co|gov|edu)/)[^\s]+"
+        for match in re.findall(url_pattern, request.text, re.IGNORECASE):
+            normalized = match if match.lower().startswith(("http://", "https://")) else f"https://{match}"
+            if normalized not in target_urls:
+                target_urls.append(normalized)
 
-        # 3. Threat Intel Signals
-        if primary_url:
+        # 2. URL Processing for ALL URLs in target_urls
+        resolved_urls: List[ExpandedUrlResult] = []
+        if target_urls:
+            # Expand all short links concurrently
             try:
-                threat_intel_res = await asyncio.wait_for(
-                    self.threat_intel_provider.lookup(primary_url),
-                    timeout=settings.REQUEST_TIMEOUT_SECONDS
-                )
-                verdict = threat_intel_res.verdict
-                if verdict == ThreatIntelVerdict.KNOWN_MALICIOUS:
+                expansion_tasks = [self.url_expander.expand(u) for u in target_urls]
+                resolved_urls = await asyncio.gather(*expansion_tasks, return_exceptions=False)
+            except Exception as e:
+                logger.error(f"Shortener expansion failed: {e}")
+                # Fallback to original URLs
+                resolved_urls = [
+                    ExpandedUrlResult(original_url=u, resolved_url=u, redirect_chain=[u], is_shortened=False, hops=0)
+                    for u in target_urls
+                ]
+
+            for exp in resolved_urls:
+                if exp.is_shortened and exp.hops > 0:
                     all_signals.append(RiskSignal(
-                        category="threat_intel",
-                        code="REPUTATION_MALICIOUS",
-                        description="This domain is flagged as known malicious by threat intelligence.",
-                        technical_detail=f"Provider '{threat_intel_res.source}': {threat_intel_res.detail}",
-                        weight=0.80,
+                        category="url",
+                        code="URL_EXPANDED",
+                        description=f"Shortened link expanded ({exp.hops} redirects): {exp.original_url} → {exp.resolved_url}",
+                        technical_detail=f"Redirect chain: {' -> '.join(exp.redirect_chain)}",
+                        weight=0.10,
                         triggered=True
                     ))
-                elif verdict == ThreatIntelVerdict.KNOWN_SAFE:
-                    all_signals.append(RiskSignal(
-                        category="threat_intel",
-                        code="REPUTATION_SAFE",
-                        description="This domain is recognized as a known safe service.",
-                        technical_detail=f"Provider '{threat_intel_res.source}': {threat_intel_res.detail}",
-                        weight=0.0,
-                        triggered=False
-                    ))
-                else:
-                    all_signals.append(RiskSignal(
-                        category="threat_intel",
-                        code="REPUTATION_UNKNOWN",
-                        description="No prior threat intelligence record found for this domain.",
-                        technical_detail=f"Provider '{threat_intel_res.source}': UNKNOWN (not evidence of safety)",
-                        weight=0.05,
-                        triggered=False
-                    ))
+
+                # Analyze heuristics on resolved URL
+                try:
+                    url_task = asyncio.create_task(
+                        asyncio.to_thread(self.url_service.analyze, exp.resolved_url, exp.original_url)
+                    )
+                    url_signals = await asyncio.wait_for(url_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
+                    all_signals.extend(url_signals)
+                except Exception as e:
+                    logger.error(f"URL analysis failed for '{exp.resolved_url}': {e}")
+                    degraded = True
+                    degraded_reasons.append("url_analysis_timeout")
+
+        # 3. Concurrent Threat Intelligence Lookup for ALL resolved URLs
+        if resolved_urls:
+            try:
+                intel_tasks = [self.threat_intel_provider.lookup(exp.resolved_url) for exp in resolved_urls]
+                intel_results = await asyncio.gather(*intel_tasks, return_exceptions=True)
+
+                for idx, threat_res in enumerate(intel_results):
+                    if isinstance(threat_res, Exception):
+                        logger.error(f"Threat intel lookup failed: {threat_res}")
+                        continue
+
+                    target_exp = resolved_urls[idx]
+                    verdict = threat_res.verdict
+                    if verdict == ThreatIntelVerdict.KNOWN_MALICIOUS:
+                        all_signals.append(RiskSignal(
+                            category="threat_intel",
+                            code="REPUTATION_MALICIOUS",
+                            description=f"Domain '{target_exp.resolved_url}' is flagged as known malicious by threat intelligence.",
+                            technical_detail=f"Providers '{threat_res.source}': {threat_res.detail}",
+                            weight=0.85,
+                            triggered=True
+                        ))
+                    elif verdict == ThreatIntelVerdict.KNOWN_SAFE:
+                        all_signals.append(RiskSignal(
+                            category="threat_intel",
+                            code="REPUTATION_SAFE",
+                            description=f"Domain '{target_exp.resolved_url}' is recognized as a known safe service.",
+                            technical_detail=f"Providers '{threat_res.source}': {threat_res.detail}",
+                            weight=0.0,
+                            triggered=False
+                        ))
+                    else:
+                        all_signals.append(RiskSignal(
+                            category="threat_intel",
+                            code="REPUTATION_UNKNOWN",
+                            description=f"No prior threat intelligence record found for '{target_exp.resolved_url}'.",
+                            technical_detail=f"Providers '{threat_res.source}': UNKNOWN (not evidence of safety)",
+                            weight=0.05,
+                            triggered=False
+                        ))
             except Exception as e:
-                logger.error(f"Threat intel lookup failed or timed out: {e}")
+                logger.error(f"Threat intel batch lookup failed or timed out: {e}")
                 degraded = True
                 degraded_reasons.append("threat_intel_timeout")
 
         # 4. Identity Verification Signals
+        all_url_strings = [exp.resolved_url for exp in resolved_urls] if resolved_urls else target_urls
         try:
             id_task = asyncio.create_task(
-                self.identity_provider.verify(request.sender_id, request.claimed_organization, request.urls)
+                self.identity_provider.verify(request.sender_id, request.claimed_organization, all_url_strings)
             )
             id_signals = await asyncio.wait_for(id_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
             all_signals.extend(id_signals)
@@ -130,9 +162,11 @@ class AnalysisOrchestrator:
         # 5. Risk Fusion
         score, level, confidence, reasons, action, should_block, should_report = self.fusion_engine.fuse(
             signals=all_signals,
-            has_url=bool(request.urls),
+            has_url=bool(target_urls),
             degraded=degraded
         )
+
+        primary_detected_url = resolved_urls[0].resolved_url if resolved_urls else None
 
         analysis_id = str(uuid.uuid4())
         response = RiskResultResponse(
@@ -145,7 +179,7 @@ class AnalysisOrchestrator:
             recommended_action=action,
             should_block=should_block,
             should_report=should_report,
-            detected_url=primary_url,
+            detected_url=primary_detected_url,
             sender=request.sender_id,
             model_version="1.0.0",
             degraded=degraded,

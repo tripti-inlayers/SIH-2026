@@ -13,13 +13,22 @@ class RiskFusionEngine:
         Fuses all computed signals into a final risk evaluation tuple:
         (risk_score, risk_level, confidence, reasons, recommended_action, should_block, should_report)
         """
-        # 1. Accumulate raw score from triggered signals
+        # 1. Check for High-Confidence Malicious Override (Threat Intel / Malicious Feed)
+        has_malicious_override = any(
+            s.code == "REPUTATION_MALICIOUS" and s.triggered for s in signals
+        )
+
+        # 2. Accumulate raw score from triggered signals
         raw_score = sum(s.weight for s in signals if s.triggered)
 
-        # 2. Normalize to 0 - 100 integer range
+        if has_malicious_override:
+            # Force high risk score override for confirmed threat intelligence matches
+            raw_score = max(0.85, raw_score)
+
+        # 3. Normalize to 0 - 100 integer range
         risk_score = min(100, max(0, int(round(raw_score * 100))))
 
-        # 3. Map to RiskLevel using configured thresholds
+        # 4. Map to RiskLevel using configured thresholds
         if risk_score <= settings.RISK_THRESHOLD_LOW_MAX:
             risk_level = RiskLevel.LOW
         elif risk_score <= settings.RISK_THRESHOLD_SUSPICIOUS_MAX:
@@ -27,16 +36,19 @@ class RiskFusionEngine:
         else:
             risk_level = RiskLevel.HIGH
 
-        # 4. Confidence calculation
-        # Base 0.60 + 0.10 for each unique triggered category
+        # 5. Confidence calculation
         triggered_categories = {s.category for s in signals if s.triggered}
         confidence = 0.60 + (0.10 * len(triggered_categories))
-        confidence = min(0.95, confidence)
+
+        if has_malicious_override:
+            confidence = max(0.95, confidence)
+
+        confidence = min(0.98, confidence)
         if degraded:
             confidence = max(0.30, confidence - 0.20)
         confidence = round(confidence, 2)
 
-        # 5. Extract top 4 plain-language reasons sorted by weight descending
+        # 6. Extract top 4 plain-language reasons sorted by weight descending
         triggered_signals = [s for s in signals if s.triggered]
         triggered_signals.sort(key=lambda s: s.weight, reverse=True)
         reasons = [s.description for s in triggered_signals[:4]]
@@ -47,7 +59,7 @@ class RiskFusionEngine:
             else:
                 reasons = ["Suspicious pattern detected in message structure."]
 
-        # 6. Recommended Action
+        # 7. Recommended Action
         if risk_level == RiskLevel.LOW:
             recommended_action = "No action needed, but stay cautious with unfamiliar links."
         elif risk_level == RiskLevel.SUSPICIOUS:
@@ -55,7 +67,7 @@ class RiskFusionEngine:
         else:
             recommended_action = "Do not open this link or share any information."
 
-        # 7. Action Flags
+        # 8. Action Flags
         should_block = (risk_level == RiskLevel.HIGH) and has_url
         should_report = (risk_level == RiskLevel.HIGH)
 

@@ -31,8 +31,15 @@ object SmsCaptureChannel {
     }
 
     private fun extractUrls(text: String): List<String> {
-        val urlRegex = Regex("""https?://[^\s]+""", RegexOption.IGNORE_CASE)
-        return urlRegex.findAll(text).map { it.value }.toList()
+        val urlRegex = Regex("""(?:https?://|cutt\.ly/|bit\.ly/|tinyurl\.com/|t\.co/|(?:[a-zA-Z0-9-]+\.)+(?:com|ly|in|org|net|xyz|tk|top|io|co|gov|edu)/)[^\s]+""", RegexOption.IGNORE_CASE)
+        return urlRegex.findAll(text).map { match ->
+            val raw = match.value
+            if (!raw.startsWith("http://", ignoreCase = true) && !raw.startsWith("https://", ignoreCase = true)) {
+                "https://$raw"
+            } else {
+                raw
+            }
+        }.toList()
     }
 
     private fun detectClaimedOrg(text: String): String? {

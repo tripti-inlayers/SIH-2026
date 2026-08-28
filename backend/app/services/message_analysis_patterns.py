@@ -4,6 +4,7 @@ URGENCY_PATTERNS = [
     r"act now", r"immediately", r"within \d+ hours?", r"within 24 hours",
     r"account will be (suspended|blocked|terminated|closed)",
     r"urgent action required", r"last chance", r"before it is too late",
+    r"click to view", r"click here", r"track here", r"view order", r"click on the link",
     r"turant", r"abhi", r"24 ghante ke andar", r"account band ho jayega", r"aaj hi"
 ]
 
@@ -32,7 +33,8 @@ THREAT_PATTERNS = [
 
 GENERIC_SOCIAL_ENG_PATTERNS = [
     r"dear customer", r"valued user", r"kindly update", r"click here to verify",
-    r"track your package", r"confirm your address"
+    r"track your package", r"confirm your address", r"your order .* (shipped|delivered|dispatched)",
+    r"order rs\.?\s*\d+", r"order #?\d+ has been shipped", r"delivery pending", r"parcel on the way"
 ]
 
 ORG_NAMES = [
