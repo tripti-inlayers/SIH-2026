@@ -19,8 +19,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 class SmsReceiver : BroadcastReceiver() {
 
     private val retrofit = Retrofit.Builder()
-        // 127.0.0.1 routes through 'adb reverse tcp:8000 tcp:8000' on USB and emulator
-        .baseUrl("http://127.0.0.1:8000")
+        // Wi-Fi LAN IP to allow wireless backend access without USB cable
+        .baseUrl("http://192.168.29.242:8000/")
         .addConverterFactory(GsonConverterFactory.create())
         .build()
 
