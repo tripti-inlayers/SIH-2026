@@ -69,7 +69,7 @@ class UrlAnalysisService:
 
         # 3. Excessive Subdomains
         subdomain_parts = host.split(".")
-        excessive_subdomains = len(subdomain_parts) > 3
+        excessive_subdomains = len(subdomain_parts) > 4
         signals.append(RiskSignal(
             category="url",
             code="EXCESSIVE_SUBDOMAINS",

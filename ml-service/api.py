@@ -28,12 +28,17 @@ class MockSpamMessageDetector:
         self.model_path = model_path
     
     def detect(self, text, return_probs=False):
-        if "urgent" in text.lower() or "http" in text.lower():
+        lower = text.lower()
+        if "indiapost" in lower or "gov.in" in lower:
+            prediction = 0
+            probs = [0.95, 0.05]
+        elif "urgent" in lower or "pin" in lower or "xyz" in lower or "tk" in lower or "verify" in lower:
             prediction = 1
             probs = [0.1, 0.9]
         else:
             prediction = 0
-            probs = [0.95, 0.05]
+            probs = [0.90, 0.10]
+
         if return_probs:
             return prediction, probs
         return prediction

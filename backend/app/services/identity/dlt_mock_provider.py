@@ -3,7 +3,7 @@ from typing import Optional, List
 from urllib.parse import urlparse
 from app.schemas.common import RiskSignal
 
-DLT_HEADER_REGEX = r"^[A-Z0-9]{2,3}-[A-Z0-9]{6}$"
+DLT_HEADER_REGEX = r"^[A-Z0-9]{2,3}-[A-Z0-9]{3,8}$"
 PHONE_REGEX = r"^\+?\d{10,12}$"
 SPECIFIC_BRANDS = ["sbi", "state bank", "hdfc", "icici", "axis", "india post", "irctc", "airtel", "jio"]
 

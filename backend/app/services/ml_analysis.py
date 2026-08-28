@@ -28,7 +28,7 @@ class MlAnalysisService:
                         code="AI_SPAM_DETECTED",
                         description="AI model flagged this message as spam/phishing.",
                         technical_detail=f"RoBERTa sequence classification confidence: {confidence:.2f}",
-                        weight=0.50, # Heavily trust finetuned AI detection
+                        weight=0.35,
                         triggered=True
                     )
                 else:

@@ -13,13 +13,14 @@ class IncomingSmsReceiver : BroadcastReceiver() {
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             if (!messages.isNullOrEmpty()) {
                 val sender = messages[0].displayOriginatingAddress
+                val timestamp = messages[0].timestampMillis
                 val bodyBuilder = StringBuilder()
                 for (msg in messages) {
                     bodyBuilder.append(msg.displayMessageBody)
                 }
                 val body = bodyBuilder.toString()
                 if (body.isNotBlank()) {
-                    SmsCaptureChannel.emitSms(sender, body)
+                    SmsCaptureChannel.emitSms(sender, body, timestamp)
                 }
             }
         }

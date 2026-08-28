@@ -15,7 +15,7 @@ object SmsCaptureChannel {
     )
     val events: Flow<AnalysisRequest> = _events.asSharedFlow()
 
-    fun emitSms(sender: String?, body: String) {
+    fun emitSms(sender: String?, body: String, timestampEpochMillis: Long = System.currentTimeMillis()) {
         val urls = extractUrls(body)
         val request = AnalysisRequest(
             messageId = "SMS-${UUID.randomUUID().toString().take(8)}",
@@ -24,7 +24,7 @@ object SmsCaptureChannel {
             senderId = sender,
             claimedOrganization = detectClaimedOrg(body),
             language = "en",
-            timestampEpochMillis = System.currentTimeMillis(),
+            timestampEpochMillis = if (timestampEpochMillis > 0) timestampEpochMillis else System.currentTimeMillis(),
             source = CaptureSource.SMS
         )
         _events.tryEmit(request)
