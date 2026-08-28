@@ -15,13 +15,10 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing SancharSaathi Backend Service...")
-    init_db()
+    await init_db()
     
-    # Safe startup notification without logging the API key
-    if settings.GOOGLE_WEBRISK_API_KEY:
-        logger.info("Google Web Risk configured: YES")
-    else:
-        logger.info("Google Web Risk configured: NO")
+    # Safe startup notification
+    logger.info("Threat intelligence provider: %s", settings.THREAT_INTEL_PROVIDER)
         
     yield
 

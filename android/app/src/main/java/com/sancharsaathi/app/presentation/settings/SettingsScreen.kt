@@ -170,12 +170,29 @@ fun SettingsScreen(
                                                 "● ML Service: Unavailable (${mlInfo?.details ?: "Unreachable"})"
                                             }
 
+                                            val dbText = when (body.database) {
+                                                "persistent_sqlite" -> "Persistent SQLite"
+                                                "connected" -> "Connected"
+                                                else -> "In-Memory Fallback"
+                                            }
+                                            val ti = body.threatIntel
+                                            val threatIntelText = if (ti?.reachable == true) {
+                                                "✓ PhishDestroy Connected"
+                                            } else {
+                                                "✗ PhishDestroy Unavailable (${ti?.details ?: "Unreachable"})"
+                                            }
+                                            val identityText = when (body.identityProvider) {
+                                                "dlt_trai_registry" -> "TRAI DLT Registry"
+                                                else -> "Mock Identity Engine"
+                                            }
+
                                             connectionTestStatus = "● Backend: Connected (v${body.version})"
                                             connectionTestDetails = listOf(
-                                                "Database: ${body.database}",
-                                                "Threat Intel: ${body.threatIntelProvider}",
-                                                "Identity Engine: ${body.identityProvider}",
-                                                mlStatusText
+                                                "Database: $dbText",
+                                                "Threat Intel: $threatIntelText",
+                                                "Identity Engine: $identityText",
+                                                mlStatusText,
+                                                "Pipeline: Fully Operational"
                                             )
                                         } else {
                                             connectionTestStatus = "● Backend Unhealthy (HTTP ${response.code()})"

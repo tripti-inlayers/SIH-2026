@@ -28,4 +28,4 @@ class HealthResponse(BaseModel):
     identity_provider: str
     version: str
     ml_service: Optional[dict] = None
-    google_web_risk: Optional[dict] = None
+    threat_intel: Optional[dict] = None

@@ -2,14 +2,14 @@ import asyncio
 import re
 import uuid
 from typing import List, Optional
-from app.schemas.analyze import AnalyzeRequest, RiskResultResponse
+from app.schemas.analyze import AnalyzeRequest, RiskResultResponse, ThreatIntelInfo
 from app.schemas.common import RiskSignal
 from app.services.message_analysis import MessageAnalysisService
 from app.services.url_analysis import UrlAnalysisService
 from app.services.threat_intel.base import ThreatIntelVerdict
 from app.services.threat_intel.mock_provider import MockThreatIntelProvider
 from app.services.threat_intel.rdap_provider import RdapThreatIntelProvider
-from app.services.threat_intel.google_webrisk import GoogleWebRiskProvider
+from app.services.threat_intel.phish_destroy import PhishDestroyProvider
 from app.services.identity.dlt_mock_provider import DltMockIdentityProvider
 from app.services.risk_fusion import RiskFusionEngine
 from app.services.ml_analysis import MlAnalysisService
@@ -48,10 +48,8 @@ class AnalysisOrchestrator:
         
         if settings.THREAT_INTEL_PROVIDER == "rdap":
             self.threat_intel_provider = RdapThreatIntelProvider()
-        elif settings.THREAT_INTEL_PROVIDER == "google_webrisk" or settings.GOOGLE_WEBRISK_API_KEY:
-            self.threat_intel_provider = GoogleWebRiskProvider()
         else:
-            self.threat_intel_provider = MockThreatIntelProvider()
+            self.threat_intel_provider = PhishDestroyProvider()
 
         self.identity_provider = DltMockIdentityProvider()
         self.fusion_engine = RiskFusionEngine()
@@ -110,101 +108,116 @@ class AnalysisOrchestrator:
                 degraded = True
                 degraded_reasons.append("url_analysis_timeout")
 
-        # 3. Threat Intelligence Signals (Google Web Risk / Provider - Concurrent for all URLs)
+        # 3. Threat Intelligence / PhishDestroy
+        primary_threat_intel_info = ThreatIntelInfo(
+            provider="phishdestroy",
+            checked=bool(urls),
+            reachable=False,
+            threat=False,
+            risk_score=0,
+            severity=None,
+            flags=[],
+            matched_keywords=[],
+            error="No URLs in content" if not urls else None,
+            degraded=False,
+            verdict="UNAVAILABLE"
+        )
+
+        max_pd_score = 0
+        any_pd_threat = False
+
         if urls:
             try:
                 threat_tasks = [
-                    self.threat_intel_provider.lookup(u)
+                    asyncio.wait_for(
+                        self.threat_intel_provider.lookup(u),
+                        timeout=settings.REQUEST_TIMEOUT_SECONDS
+                    )
                     for u in urls
                 ]
                 threat_results = await asyncio.gather(*threat_tasks, return_exceptions=True)
+                
+                best_result = None
+                
                 for u, res in zip(urls, threat_results):
                     if isinstance(res, Exception):
                         logger.error(f"Threat intel error for {u}: {res}")
                         degraded = True
                         if "threat_intel_error" not in degraded_reasons:
                             degraded_reasons.append("threat_intel_error")
+                        primary_threat_intel_info.error = f"Threat intel lookup error ({str(res)})"
                         continue
 
-                    if not res.available:
+                    if not res.reachable:
                         degraded = True
                         if "threat_intel_unavailable" not in degraded_reasons:
                             degraded_reasons.append("threat_intel_unavailable")
+                        
                         all_signals.append(RiskSignal(
                             category="threat_intel",
-                            code="WEBRISK_UNAVAILABLE",
-                            description="Threat intelligence lookup unavailable.",
-                            technical_detail=f"Provider '{res.source}': {res.detail}",
+                            code="REPUTATION_UNAVAILABLE",
+                            description="PhishDestroy lookup unavailable or degraded.",
+                            technical_detail=f"Provider 'phishdestroy' lookup failed for {u}: {res.error}",
                             weight=0.0,
                             triggered=False
                         ))
-                    elif res.matched:
-                        threat_types = res.threat_types
-                        has_malware = "MALWARE" in threat_types
-                        has_phishing = "SOCIAL_ENGINEERING" in threat_types
-                        has_unwanted = "UNWANTED_SOFTWARE" in threat_types
-                        has_extended = "SOCIAL_ENGINEERING_EXTENDED_COVERAGE" in threat_types
+                        continue
 
-                        if has_malware:
-                            all_signals.append(RiskSignal(
-                                category="threat_intel",
-                                code="WEBRISK_MALWARE",
-                                description="Google Web Risk identified this URL as associated with malware distribution.",
-                                technical_detail=f"URL: {u} | Threat: MALWARE",
-                                weight=0.80,
-                                triggered=True
-                            ))
-                        if has_phishing:
-                            all_signals.append(RiskSignal(
-                                category="threat_intel",
-                                code="WEBRISK_PHISHING",
-                                description="Google Web Risk identified this URL as associated with social engineering or phishing.",
-                                technical_detail=f"URL: {u} | Threat: SOCIAL_ENGINEERING",
-                                weight=0.80,
-                                triggered=True
-                            ))
-                        if has_unwanted:
-                            all_signals.append(RiskSignal(
-                                category="threat_intel",
-                                code="WEBRISK_UNWANTED_SOFTWARE",
-                                description="Google Web Risk identified this URL as associated with unwanted software.",
-                                technical_detail=f"URL: {u} | Threat: UNWANTED_SOFTWARE",
-                                weight=0.50,
-                                triggered=True
-                            ))
-                        if has_extended and not (has_malware or has_phishing or has_unwanted):
-                            all_signals.append(RiskSignal(
-                                category="threat_intel",
-                                code="WEBRISK_EXTENDED_COVERAGE",
-                                description="Google Web Risk extended coverage flagged this URL as potential social engineering risk.",
-                                technical_detail=f"URL: {u} | Threat: SOCIAL_ENGINEERING_EXTENDED_COVERAGE",
-                                weight=0.35,
-                                triggered=True
-                            ))
+                    # Accumulate stats
+                    max_pd_score = max(max_pd_score, res.riskScore)
+                    if res.threat:
+                        any_pd_threat = True
 
-                        if not (has_malware or has_phishing or has_unwanted or has_extended):
-                            all_signals.append(RiskSignal(
-                                category="threat_intel",
-                                code="REPUTATION_MALICIOUS",
-                                description="This domain/URL is flagged as known malicious by threat intelligence.",
-                                technical_detail=f"Provider '{res.source}': {res.detail}",
-                                weight=0.80,
-                                triggered=True
-                            ))
+                    # Select best_result
+                    if best_result is None:
+                        best_result = res
                     else:
-                        # Clean / No match on threat lists - Informative neutral evidence (NEVER forces score to 0)
+                        if res.threat and not best_result.threat:
+                            best_result = res
+                        elif res.riskScore > best_result.riskScore:
+                            best_result = res
+
+                    # Add signal for each URL checked
+                    if res.threat:
+                        all_signals.append(RiskSignal(
+                            category="threat_intel",
+                            code="REPUTATION_MALICIOUS",
+                            description=f"PhishDestroy flagged threat for URL: {u}",
+                            technical_detail=f"Domain: {u} | threat={res.threat} | score={res.riskScore} | flags={res.flags}",
+                            weight=res.riskScore / 100.0,
+                            triggered=True
+                        ))
+                    else:
                         all_signals.append(RiskSignal(
                             category="threat_intel",
                             code="REPUTATION_UNKNOWN",
-                            description="Google Web Risk: No matching threat found in threat lists.",
-                            technical_detail=f"Provider '{res.source}': clean/no match for {u}",
+                            description=f"PhishDestroy: No threat match for URL: {u}",
+                            technical_detail=f"Domain: {u} | clean | score={res.riskScore}",
                             weight=0.0,
                             triggered=False
                         ))
+
+                if best_result is not None:
+                    primary_threat_intel_info = ThreatIntelInfo(
+                        provider="phishdestroy",
+                        checked=True,
+                        reachable=best_result.reachable,
+                        threat=best_result.threat,
+                        risk_score=best_result.riskScore,
+                        severity=best_result.severity,
+                        flags=best_result.flags,
+                        matched_keywords=best_result.matchedKeywords,
+                        error=best_result.error,
+                        degraded=best_result.degraded,
+                        verdict=best_result.verdict.value
+                    )
             except Exception as e:
                 logger.error(f"Threat intel batch failed or timed out: {e}")
                 degraded = True
                 degraded_reasons.append("threat_intel_timeout")
+                primary_threat_intel_info.error = f"Threat intel batch timeout: {str(e)}"
+                primary_threat_intel_info.degraded = True
+                primary_threat_intel_info.verdict = "UNAVAILABLE"
 
         # 4. Identity Verification Signals
         try:
@@ -218,14 +231,29 @@ class AnalysisOrchestrator:
             degraded = True
             degraded_reasons.append("identity_verification_timeout")
 
+        # Extract ML spam probability if available
+        ml_spam_prob = None
+        for s in all_signals:
+            if s.category == "ml_model":
+                match = re.search(r"confidence:\s*([\d\.]+)", s.technical_detail)
+                if match:
+                    conf = float(match.group(1))
+                    if s.code == "AI_SPAM_DETECTED":
+                        ml_spam_prob = conf
+                    else:
+                        ml_spam_prob = 1.0 - conf
+
         # 5. Risk Fusion
         score, level, confidence, reasons, action, should_block, should_report = self.fusion_engine.fuse(
             signals=all_signals,
             has_url=bool(urls),
-            degraded=degraded
+            degraded=degraded,
+            phishdestroy_score=max_pd_score,
+            phishdestroy_threat=any_pd_threat,
+            ml_spam_probability=ml_spam_prob
         )
 
-        analysis_id = str(uuid.uuid4())
+        analysis_id = request.message_id or str(uuid.uuid4())
         response = RiskResultResponse(
             analysis_id=analysis_id,
             risk_score=score,
@@ -240,7 +268,8 @@ class AnalysisOrchestrator:
             sender=request.sender_id,
             model_version="1.0.0",
             degraded=degraded,
-            degraded_reason=",".join(degraded_reasons) if degraded_reasons else None
+            degraded_reason=",".join(degraded_reasons) if degraded_reasons else None,
+            threat_intel=primary_threat_intel_info
         )
 
         # Persist analysis

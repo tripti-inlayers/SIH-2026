@@ -29,112 +29,171 @@ class IncomingSmsReceiver : BroadcastReceiver() {
                 for (msg in messages) {
                     bodyBuilder.append(msg.displayMessageBody)
                 }
+                val timestamp = messages[0].timestampMillis.let { if (it > 0) it else System.currentTimeMillis() }
                 val body = bodyBuilder.toString()
                 if (body.isNotBlank()) {
-                    processIncomingSms(context, sender, body)
+                    android.util.Log.d("SancharSaathiSms", "[RECEIVED] -1 | $sender | $timestamp")
+                    SmsCaptureChannel.emitSms(sender, body)
+                    processIncomingSms(context, sender, body, timestamp)
                 }
             }
         }
     }
 
-    private fun processIncomingSms(context: Context, sender: String, body: String) {
+    private fun processIncomingSms(context: Context, sender: String, body: String, timestamp: Long) {
         val urls = extractUrls(body)
-        val timestamp = System.currentTimeMillis()
-        val stableAnalysisId = AppModule.smsInboxReader.generateStableId(sender, body, timestamp)
 
-        val analysisRequest = AnalysisRequest(
-            messageId = stableAnalysisId,
-            text = body,
-            urls = urls,
-            senderId = sender,
-            claimedOrganization = detectClaimedOrg(body),
-            language = "en",
-            timestampEpochMillis = timestamp,
-            source = CaptureSource.SMS
-        )
-
-        android.util.Log.d("SancharSaathiSMS", "SMS_RECEIVED_EVENT: sender=$sender, msgId=${analysisRequest.messageId}, length=${body.length}")
-        android.util.Log.d("SancharSaathiSMS", "SMS_ANALYSIS_STARTED: msgId=${analysisRequest.messageId}")
-
-        // 1. Run local classifier
-        val classification = MessageClassifier.classify(body)
-
-        if (!classification.requiresFallback) {
-            // Local match - Save directly and notify
-            val localResult = RiskResult(
-                analysisId = stableAnalysisId,
-                riskScore = classification.riskScore,
-                riskLevel = classification.riskLevel,
-                confidence = 0.95,
-                reasons = listOf(classification.reason),
-                signals = classification.triggeredFeatures.map { feature ->
-                    RiskSignal(
-                        category = "local_template",
-                        code = classification.matchedTemplateId ?: "GENERIC_MATCH",
-                        description = "Matched local pattern feature: $feature",
-                        technicalDetail = "Local template regex match",
-                        weight = classification.riskScore / 100.0,
-                        triggered = true
-                    )
-                },
-                recommendedAction = when (classification.riskLevel) {
-                    RiskLevel.HIGH -> "Danger: Block link and report immediately."
-                    RiskLevel.SUSPICIOUS -> "Suspicious content. Exercise caution."
-                    else -> "Looks safe to interact."
-                },
-                shouldBlock = classification.riskLevel == RiskLevel.HIGH,
-                shouldReport = classification.riskLevel == RiskLevel.HIGH,
+        receiverScope.launch {
+            // Wait 500ms for system to persist the message to content://sms
+            kotlinx.coroutines.delay(500)
+            
+            var providerId = AppModule.smsInboxReader.findProviderId(sender, body)
+            if (providerId == null) {
+                // Try again after another 500ms
+                kotlinx.coroutines.delay(500)
+                providerId = AppModule.smsInboxReader.findProviderId(sender, body)
+            }
+            
+            // If still null, generate a fallback stable ID
+            val phoneIdKey = if (providerId != null) {
+                "SMS-$providerId"
+            } else {
+                AppModule.smsInboxReader.generateStableId(sender, body, timestamp)
+            }
+            
+            android.util.Log.d("SancharSaathiSms", "[RECEIVED] providerId=$providerId phoneIdKey=$phoneIdKey")
+            
+            // 1. Create a persistent pending record in HistoryStore so UI displays it immediately
+            val pendingResult = RiskResult(
+                analysisId = phoneIdKey,
+                riskScore = -2, // Triggers PENDING / ANALYZING state
+                riskLevel = RiskLevel.LOW,
+                confidence = 0.0,
+                reasons = listOf("Analyzing message content..."),
+                signals = emptyList(),
+                recommendedAction = "Analyzing message content...",
+                shouldBlock = false,
+                shouldReport = false,
                 detectedUrl = urls.firstOrNull(),
                 sender = sender,
-                modelVersion = "local-1.0.0",
-                degraded = false,
-                degradedReason = null,
+                modelVersion = "1.0.0",
+                degraded = true,
                 smsBody = body,
                 timestamp = timestamp
             )
+            AppModule.historyStore.add(pendingResult, source = CaptureSource.SMS, status = "PENDING")
             
-            AppModule.historyStore.add(localResult, source = CaptureSource.SMS)
-            android.util.Log.d("SancharSaathiSMS", "SMS_ANALYSIS_COMPLETED: analysisId=${localResult.analysisId}, riskLevel=${localResult.riskLevel}")
-            android.util.Log.d("SancharSaathiSMS", "SMS_HISTORY_SAVED: analysisId=${localResult.analysisId}, source=REAL_SMS")
-            
-            NotificationHelper.showNotification(context, localResult)
-            
-            // Also notify the capture channel so any active screen updates
+            // Instantly notify live screens via channel so feed shows the placeholder
             SmsCaptureChannel.emitSms(sender, body)
-            receiverScope.launch { AppModule.smsInboxReader.readInboxAndSync(10) }
-        } else {
-            // 2. No predefined pattern - Fallback to backend analysis via coroutine
-            receiverScope.launch {
-                val result = AppModule.analyzeContentUseCase(analysisRequest)
-                val finalResult = when (result) {
+            
+            // 2. Perform analysis
+            val classification = MessageClassifier.classify(body)
+            val isLocalMatch = !classification.requiresFallback
+            val shouldCallBackend = !isLocalMatch || urls.isNotEmpty()
+            
+            val finalResult: RiskResult
+            if (!shouldCallBackend) {
+                // Local match without URL - complete offline
+                finalResult = RiskResult(
+                    analysisId = phoneIdKey,
+                    riskScore = classification.riskScore,
+                    riskLevel = classification.riskLevel,
+                    confidence = 0.95,
+                    reasons = listOf(classification.reason),
+                    signals = classification.triggeredFeatures.map { feature ->
+                        RiskSignal(
+                            category = "local_template",
+                            code = classification.matchedTemplateId ?: "GENERIC_MATCH",
+                            description = "Matched local pattern feature: $feature",
+                            technicalDetail = "Local template regex match",
+                            weight = classification.riskScore / 100.0,
+                            triggered = true
+                        )
+                    },
+                    recommendedAction = when (classification.riskLevel) {
+                        RiskLevel.HIGH -> "Danger: Block link and report immediately."
+                        RiskLevel.SUSPICIOUS -> "Suspicious content. Exercise caution."
+                        else -> "Looks safe to interact."
+                    },
+                    shouldBlock = classification.riskLevel == RiskLevel.HIGH,
+                    shouldReport = classification.riskLevel == RiskLevel.HIGH,
+                    detectedUrl = urls.firstOrNull(),
+                    sender = sender,
+                    modelVersion = "local-1.0.0",
+                    degraded = false,
+                    degradedReason = null,
+                    smsBody = body,
+                    timestamp = timestamp
+                )
+            } else {
+                // Backend analysis request
+                val analysisRequest = AnalysisRequest(
+                    messageId = phoneIdKey,
+                    text = body,
+                    urls = urls,
+                    senderId = sender,
+                    claimedOrganization = detectClaimedOrg(body),
+                    language = "en",
+                    timestampEpochMillis = timestamp,
+                    source = CaptureSource.SMS
+                )
+                
+                android.util.Log.d("SancharSaathiSms", "[ANALYSIS_START] $phoneIdKey")
+                val netResult = try {
+                    kotlinx.coroutines.withTimeout(8000L) {
+                        AppModule.analyzeContentUseCase(analysisRequest)
+                    }
+                } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+                    android.util.Log.e("SancharSaathiSms", "Backend analysis timed out after 8s for $phoneIdKey")
+                    NetworkResult.Failure(
+                        reason = com.sancharsaathi.app.data.remote.FailureReason.TIMEOUT,
+                        message = "Analysis timed out after 8s"
+                    )
+                } catch (e: Exception) {
+                    NetworkResult.Failure(
+                        reason = com.sancharsaathi.app.data.remote.FailureReason.UNKNOWN,
+                        message = e.message ?: "Unknown error"
+                    )
+                }
+                
+                finalResult = when (netResult) {
                     is NetworkResult.Success -> {
-                        // Ensure we carry forward smsBody and timestamp
-                        result.data.copy(smsBody = body, timestamp = timestamp)
+                        netResult.data.copy(
+                            analysisId = phoneIdKey,
+                            smsBody = body,
+                            timestamp = timestamp
+                        )
                     }
                     is NetworkResult.Failure -> {
-                        // Run complete on-device security engine fallback
-                        com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
-                            analysisId = stableAnalysisId,
+                        // Fallback to on-device engine
+                        val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                            analysisId = phoneIdKey,
                             text = body,
                             sender = sender,
                             timestamp = timestamp,
                             source = CaptureSource.SMS
-                        ).copy(
+                        )
+                        onDeviceResult.copy(
+                            analysisId = phoneIdKey,
                             degraded = true,
-                            degradedReason = "backend_unreachable"
+                            degradedReason = "backend_unreachable (${netResult.message})"
                         )
                     }
                 }
-                AppModule.historyStore.add(finalResult, source = CaptureSource.SMS)
-                android.util.Log.d("SancharSaathiSMS", "SMS_ANALYSIS_COMPLETED: analysisId=${finalResult.analysisId}, riskLevel=${finalResult.riskLevel}")
-                android.util.Log.d("SancharSaathiSMS", "SMS_HISTORY_SAVED: analysisId=${finalResult.analysisId}, source=REAL_SMS")
-                
-                NotificationHelper.showNotification(context, finalResult)
-                
-                // Trigger channel update for active view
-                SmsCaptureChannel.emitSms(sender, body)
-                AppModule.smsInboxReader.readInboxAndSync(10)
             }
+            
+            // Save final result
+            val statusToSave = if (finalResult.riskScore == -1) "FAILED" else "COMPLETED"
+            AppModule.historyStore.add(finalResult, source = CaptureSource.SMS, status = statusToSave)
+            
+            if (finalResult.riskScore == -1) {
+                android.util.Log.d("SancharSaathiSms", "[ANALYSIS_FAILURE] $phoneIdKey | ${finalResult.degradedReason ?: "failed"}")
+            } else {
+                android.util.Log.d("SancharSaathiSms", "[ANALYSIS_SUCCESS] $phoneIdKey | ${finalResult.riskScore} | ${finalResult.riskLevel}")
+            }
+            
+            NotificationHelper.showNotification(context, finalResult)
+            SmsCaptureChannel.emitSms(sender, body)
         }
     }
 

@@ -164,6 +164,46 @@ fun ResultContent(
                         modifier = Modifier.padding(12.dp)
                     )
                 }
+
+                // Dedicated PhishDestroy Threat Intelligence Card
+                val ti = result.threatIntel
+                if (ti != null && ti.checked) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        color = if (ti.threat) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                        shape = MaterialTheme.shapes.medium,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Text(
+                                text = "Threat Intelligence / PhishDestroy",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (ti.threat) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            val statusText = when {
+                                ti.verdict == "CHECKED_THREAT" || ti.threat -> "● Flagged Threat (Severity: ${ti.severity ?: "unknown"})"
+                                ti.reachable -> "● Verified Clean (No matching threat on reputation lists)"
+                                else -> "● Lookup Unavailable (${ti.error ?: "Offline / Degraded"})"
+                            }
+                            Text(
+                                text = statusText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (ti.threat) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+                            )
+                            if (ti.riskScore > 0) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Reputation Score: ${ti.riskScore}/100 | Flags: ${ti.flags.joinToString()}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (ti.threat) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }

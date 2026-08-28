@@ -142,7 +142,7 @@ fun SancharSaathiNavGraph(
             RiskResultScreen(
                 viewModel = vm,
                 analysisId = id,
-                initialResult = activeResultForBlocked,
+                initialResult = if (activeResultForBlocked?.analysisId == id) activeResultForBlocked else null,
                 onNavigateBack = {
                     navController.navigate(Destinations.Home.route) {
                         popUpTo(Destinations.Home.route) { inclusive = true }

@@ -21,15 +21,18 @@ class RiskResultViewModel(
     val uiState: StateFlow<RiskResultUiState> = _uiState.asStateFlow()
 
     fun loadResult(analysisId: String, preloadedResult: RiskResult? = null) {
-        if (preloadedResult != null) {
+        if (preloadedResult != null && preloadedResult.analysisId == analysisId) {
             _uiState.value = RiskResultUiState.Success(preloadedResult)
             return
         }
+
         val cached = historyStore.get(analysisId)
+            ?: historyStore.get(if (analysisId.startsWith("SMS-")) analysisId.removePrefix("SMS-") else "SMS-$analysisId")
+
         if (cached != null) {
             _uiState.value = RiskResultUiState.Success(cached)
         } else {
-            _uiState.value = RiskResultUiState.Error("Analysis record not found.", retryable = false)
+            _uiState.value = RiskResultUiState.Error("Analysis record not found.", retryable = true)
         }
     }
 }

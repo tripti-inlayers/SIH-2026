@@ -1,9 +1,14 @@
 package com.sancharsaathi.app.presentation.home
 
+import android.database.ContentObserver
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sancharsaathi.app.data.local.HistoryStore
+import com.sancharsaathi.app.data.local.PhoneSmsMessage
 import com.sancharsaathi.app.di.AppModule
 import com.sancharsaathi.app.domain.capture.DemoContentSource
 import com.sancharsaathi.app.domain.classifier.MessageClassifier
@@ -14,13 +19,14 @@ import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.domain.model.RiskSignal
 import com.sancharsaathi.app.data.remote.NetworkResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeout
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 
 sealed interface HomeUiState {
     data class Success(val recentAnalyses: List<RiskResult>) : HomeUiState
@@ -35,8 +41,18 @@ class HomeViewModel(
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private val inFlightAnalyses = ConcurrentHashMap.newKeySet<String>()
+
+    private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            super.onChange(selfChange, uri)
+            Log.d("HomeViewModel", "SMS_CONTENT_OBSERVER_TRIGGERED: uri=$uri")
+            refreshInbox()
+        }
+    }
+
     init {
-        // Eagerly warm up backend connection on home screen load
+        // 1. Eagerly warm up backend connection on startup
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val targetUrl = AppModule.networkConfigStore.getBaseUrl()
@@ -47,54 +63,73 @@ class HomeViewModel(
             }
         }
 
-        // Listen to live broadcast receiver events to refresh inbox instantly
+        // 2. Register real-time ContentObserver on Android Telephony SMS provider
+        try {
+            AppModule.appContext.contentResolver.registerContentObserver(
+                Uri.parse("content://sms"),
+                true,
+                smsObserver
+            )
+            Log.d("HomeViewModel", "SMS_CONTENT_OBSERVER_REGISTERED")
+        } catch (e: Exception) {
+            Log.e("HomeViewModel", "Failed to register ContentObserver: ${e.message}")
+        }
+
+        // 3. Listen to live broadcast receiver events
         viewModelScope.launch {
             com.sancharsaathi.app.domain.capture.SmsCaptureChannel.events.collect {
+                Log.d("HomeViewModel", "NEW_SMS_DETECTED=true FEED_REFRESH_TRIGGERED=true")
                 refreshInbox()
-                delay(500)
-                refreshInbox()
-                delay(1000)
-            }
-        }
-        // Automatically collect database updates and refresh UI instantly (only SMS messages, deduplicated)
-        viewModelScope.launch {
-            historyStore.realSmsHistory.collect { detections ->
-                val uniqueDetections = detections.distinctBy { 
-                    (it.sender?.filter { c -> c.isLetterOrDigit() }?.takeLast(10) ?: "") to (it.smsBody?.trim() ?: "")
-                }
-                _uiState.value = HomeUiState.Success(uniqueDetections.take(50))
             }
         }
 
-        // Start a periodic background sync loop (every 4 seconds) tied to the viewModelScope lifecycle
-        viewModelScope.launch {
-            while (true) {
-                try {
-                    refreshInbox()
-                } catch (e: Exception) {
-                    Log.e("HomeViewModel", "Error in sync loop: ${e.message}", e)
-                }
-                delay(4000)
-            }
+        // 4. Initial load of phone SMS inbox
+        refreshInbox()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        try {
+            AppModule.appContext.contentResolver.unregisterContentObserver(smsObserver)
+        } catch (e: Exception) {
+            // Ignore
         }
     }
 
     fun refreshInbox() {
         viewModelScope.launch(Dispatchers.IO) {
             val inboxReader = AppModule.smsInboxReader
-            val smsMessages = inboxReader.getLatestInboxMessages(50)
-            
-            smsMessages.forEach { msg ->
-                val stableId = inboxReader.generateStableId(msg.sender, msg.body, msg.timestamp)
-                val cached = historyStore.get(stableId)
-                if (cached == null) {
-                    // Create and save placeholder to DB instantly
-                    val placeholder = RiskResult(
-                        analysisId = stableId,
-                        riskScore = -2,
+            val phoneMessages = inboxReader.getLatestInboxMessages(10)
+
+            if (phoneMessages.isEmpty()) {
+                _uiState.value = HomeUiState.Success(emptyList())
+                return@launch
+            }
+
+            val feedItems = mutableListOf<RiskResult>()
+
+            phoneMessages.forEach { msg ->
+                val phoneIdKey = "SMS-${msg.id}"
+                val cached = historyStore.get(phoneIdKey)
+
+                if (cached != null && cached.riskScore != -2) {
+                    // Completed analysis found
+                    feedItems.add(
+                        cached.copy(
+                            analysisId = phoneIdKey,
+                            sender = msg.sender,
+                            smsBody = msg.body,
+                            timestamp = msg.timestamp
+                        )
+                    )
+                } else {
+                    // Pending or new item: display "Analyzing..." card immediately
+                    val placeholder = cached ?: RiskResult(
+                        analysisId = phoneIdKey,
+                        riskScore = -2, // Triggers "Analyzing..." badge in RiskBadge
                         riskLevel = RiskLevel.LOW,
                         confidence = 0.0,
-                        reasons = listOf("Analyzing..."),
+                        reasons = listOf("Analyzing message content..."),
                         signals = emptyList(),
                         recommendedAction = "Analyzing message content...",
                         shouldBlock = false,
@@ -106,108 +141,156 @@ class HomeViewModel(
                         smsBody = msg.body,
                         timestamp = msg.timestamp
                     )
-                    historyStore.add(placeholder, source = CaptureSource.SMS, status = "PENDING")
-                    analyzeSmsInBackground(stableId, msg.sender, msg.body, msg.timestamp)
-                } else if (cached.riskScore == -1) {
-                    // Re-trigger analysis
-                    analyzeSmsInBackground(stableId, msg.sender, msg.body, msg.timestamp)
+                    feedItems.add(placeholder)
+
+                    // If not already being analyzed in background, persist placeholder and trigger analysis
+                    if (inFlightAnalyses.add(phoneIdKey)) {
+                        if (cached == null) {
+                            historyStore.add(placeholder, source = CaptureSource.SMS, status = "PENDING")
+                            Log.d("SancharSaathiSms", "[INSERT] $phoneIdKey | ${msg.id}")
+                        }
+                        analyzeSmsInBackground(phoneIdKey, msg.id, msg.sender, msg.body, msg.timestamp)
+                    }
                 }
             }
 
-            // Immediately emit the latest deduplicated real SMS detections to _uiState
-            val latestDetections = historyStore.realSmsHistory.first()
-            val uniqueDetections = latestDetections.distinctBy { 
-                (it.sender?.filter { c -> c.isLetterOrDigit() }?.takeLast(10) ?: "") to (it.smsBody?.trim() ?: "")
-            }
-            _uiState.value = HomeUiState.Success(uniqueDetections.take(50))
+            // Emit the exact top 10 latest phone SMS to UI
+            _uiState.value = HomeUiState.Success(feedItems.take(10))
+            Log.d("SancharSaathiSms", "[UI_REFRESH] ${feedItems.take(10).size} records emitted")
         }
     }
 
-    private fun analyzeSmsInBackground(analysisId: String, sender: String, body: String, timestamp: Long) {
+    private fun analyzeSmsInBackground(
+        phoneIdKey: String,
+        phoneSmsId: Long,
+        sender: String,
+        body: String,
+        timestamp: Long
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
-            Log.d("HomeViewModel", "SMS_ANALYSIS_START: phoneSmsId=$analysisId")
-            
-            val classification = MessageClassifier.classify(body)
-            val urls = extractUrls(body)
-            val isLocalMatch = !classification.requiresFallback
+            try {
+                Log.d("SancharSaathiSms", "[ANALYSIS_START] $phoneIdKey")
 
-            Log.d("HomeViewModel", "phoneSmsId=$analysisId, LOCAL_TEMPLATE_MATCH=$isLocalMatch, ANALYSIS_ROUTE=${if (isLocalMatch) "LOCAL_RULE" else "BACKEND_MODEL"}")
+                val classification = MessageClassifier.classify(body)
+                val urls = extractUrls(body)
+                val isLocalMatch = !classification.requiresFallback
+                val shouldCallBackend = !isLocalMatch || urls.isNotEmpty()
 
-            if (isLocalMatch) {
-                val localResult = RiskResult(
-                    analysisId = analysisId,
-                    riskScore = classification.riskScore,
-                    riskLevel = classification.riskLevel,
-                    confidence = 0.95,
-                    reasons = listOf(classification.reason),
-                    signals = classification.triggeredFeatures.map { feature ->
-                        RiskSignal(
-                            category = "local_template",
-                            code = classification.matchedTemplateId ?: "GENERIC_MATCH",
-                            description = "Matched pattern feature: $feature",
-                            technicalDetail = "Local template regex match",
-                            weight = classification.riskScore / 100.0,
-                            triggered = true
+                val finalResult: RiskResult
+                if (!shouldCallBackend) {
+                    finalResult = RiskResult(
+                        analysisId = phoneIdKey,
+                        riskScore = classification.riskScore,
+                        riskLevel = classification.riskLevel,
+                        confidence = 0.95,
+                        reasons = listOf(classification.reason),
+                        signals = classification.triggeredFeatures.map { feature ->
+                            RiskSignal(
+                                category = "local_template",
+                                code = classification.matchedTemplateId ?: "GENERIC_MATCH",
+                                description = "Matched pattern feature: $feature",
+                                technicalDetail = "Local template regex match",
+                                weight = classification.riskScore / 100.0,
+                                triggered = true
+                            )
+                        },
+                        recommendedAction = when (classification.riskLevel) {
+                            RiskLevel.HIGH -> "Danger: Block link and report immediately."
+                            RiskLevel.SUSPICIOUS -> "Suspicious content. Exercise caution."
+                            else -> "Looks safe to interact."
+                        },
+                        shouldBlock = classification.riskLevel == RiskLevel.HIGH,
+                        shouldReport = classification.riskLevel == RiskLevel.HIGH,
+                        detectedUrl = urls.firstOrNull(),
+                        sender = sender,
+                        modelVersion = "local-1.0.0",
+                        degraded = false,
+                        degradedReason = null,
+                        smsBody = body,
+                        timestamp = timestamp
+                    )
+                } else {
+                    // On-device security engine baseline
+                    val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                        analysisId = phoneIdKey,
+                        text = body,
+                        sender = sender,
+                        timestamp = timestamp,
+                        source = CaptureSource.SMS
+                    )
+
+                    val request = AnalysisRequest(
+                        messageId = phoneIdKey,
+                        text = body,
+                        urls = urls,
+                        senderId = sender,
+                        claimedOrganization = detectClaimedOrg(body),
+                        language = "en",
+                        timestampEpochMillis = timestamp,
+                        source = CaptureSource.SMS
+                    )
+
+                    val netResult = try {
+                        withTimeout(8000L) {
+                            AppModule.analyzeContentUseCase(request)
+                        }
+                    } catch (e: TimeoutCancellationException) {
+                        Log.e("SancharSaathiSms", "Backend analysis timed out after 8s for $phoneIdKey")
+                        NetworkResult.Failure(
+                            reason = com.sancharsaathi.app.data.remote.FailureReason.TIMEOUT,
+                            message = "Analysis timed out after 8s"
                         )
-                    },
-                    recommendedAction = when (classification.riskLevel) {
-                        RiskLevel.HIGH -> "Danger: Block link and report immediately."
-                        RiskLevel.SUSPICIOUS -> "Suspicious content. Exercise caution."
-                        else -> "Looks safe to interact."
-                    },
-                    shouldBlock = classification.riskLevel == RiskLevel.HIGH,
-                    shouldReport = classification.riskLevel == RiskLevel.HIGH,
-                    detectedUrl = urls.firstOrNull(),
-                    sender = sender,
-                    modelVersion = "local-1.0.0",
-                    degraded = false,
-                    degradedReason = null,
-                    smsBody = body,
-                    timestamp = timestamp
-                )
+                    } catch (e: Exception) {
+                        NetworkResult.Failure(
+                            reason = com.sancharsaathi.app.data.remote.FailureReason.UNKNOWN,
+                            message = e.message ?: "Unknown error"
+                        )
+                    }
 
-                historyStore.add(localResult, source = CaptureSource.SMS)
-                Log.d("HomeViewModel", "SMS_FINAL_RESULT: phoneSmsId=$analysisId, score=${localResult.riskScore}, level=${localResult.riskLevel}")
-            } else {
-                // Perform complete on-device security analysis first
-                val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
-                    analysisId = analysisId,
+                    finalResult = when (netResult) {
+                        is NetworkResult.Success -> {
+                            netResult.data.copy(
+                                analysisId = phoneIdKey,
+                                smsBody = body,
+                                timestamp = timestamp
+                            )
+                        }
+                        is NetworkResult.Failure -> {
+                            onDeviceResult.copy(
+                                analysisId = phoneIdKey,
+                                degraded = true,
+                                degradedReason = "backend_unreachable (${netResult.message})"
+                            )
+                        }
+                    }
+                }
+
+                val statusToSave = if (finalResult.riskScore == -1) "FAILED" else "COMPLETED"
+                historyStore.add(finalResult, source = CaptureSource.SMS, status = statusToSave)
+                if (finalResult.riskScore == -1) {
+                    Log.d("SancharSaathiSms", "[ANALYSIS_FAILURE] $phoneIdKey | ${finalResult.degradedReason ?: "failed"}")
+                } else {
+                    Log.d("SancharSaathiSms", "[ANALYSIS_SUCCESS] $phoneIdKey | ${finalResult.riskScore} | ${finalResult.riskLevel}")
+                }
+
+                refreshInbox()
+            } catch (e: Exception) {
+                Log.e("SancharSaathiSms", "[ANALYSIS_FAILURE] $phoneIdKey | ${e.message}", e)
+                val fallback = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                    analysisId = phoneIdKey,
                     text = body,
                     sender = sender,
                     timestamp = timestamp,
                     source = CaptureSource.SMS
+                ).copy(
+                    analysisId = phoneIdKey,
+                    degraded = true,
+                    degradedReason = "error_fallback (${e.message})"
                 )
-
-                // Attempt backend neural model enrichment
-                val request = AnalysisRequest(
-                    messageId = analysisId,
-                    text = body,
-                    urls = urls,
-                    senderId = sender,
-                    claimedOrganization = detectClaimedOrg(body),
-                    language = "en",
-                    timestampEpochMillis = timestamp,
-                    source = CaptureSource.SMS
-                )
-
-                Log.d("HomeViewModel", "SMS_BACKEND_ANALYSIS_START: phoneSmsId=$analysisId")
-                val netResult = AppModule.analyzeContentUseCase(request)
-                
-                val finalResult = when (netResult) {
-                    is NetworkResult.Success -> {
-                        netResult.data.copy(smsBody = body, timestamp = timestamp)
-                    }
-                    is NetworkResult.Failure -> {
-                        // Use on-device engine result with offline indicator
-                        onDeviceResult.copy(
-                            degraded = true,
-                            degradedReason = "offline_on_device_engine"
-                        )
-                    }
-                }
-
-                historyStore.add(finalResult, source = CaptureSource.SMS)
-                Log.d("HomeViewModel", "SMS_FINAL_RESULT: phoneSmsId=$analysisId, score=${finalResult.riskScore}, level=${finalResult.riskLevel}")
+                historyStore.add(fallback, source = CaptureSource.SMS, status = "COMPLETED")
+                refreshInbox()
+            } finally {
+                inFlightAnalyses.remove(phoneIdKey)
             }
         }
     }

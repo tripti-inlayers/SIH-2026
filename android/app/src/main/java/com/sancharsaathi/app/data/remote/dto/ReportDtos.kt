@@ -23,13 +23,20 @@ data class ReportResponseDto(
     @SerializedName("integration_note") val integrationNote: String
 )
 
+data class ThreatIntelStatusDto(
+    @SerializedName("reachable") val reachable: Boolean? = null,
+    @SerializedName("provider") val provider: String?,
+    @SerializedName("details") val details: String? = null
+)
+
 data class HealthResponseDto(
     @SerializedName("status") val status: String,
     @SerializedName("database") val database: String,
     @SerializedName("threat_intel_provider") val threatIntelProvider: String,
     @SerializedName("identity_provider") val identityProvider: String,
     @SerializedName("version") val version: String,
-    @SerializedName("ml_service") val mlService: MlServiceStatusDto?
+    @SerializedName("ml_service") val mlService: MlServiceStatusDto?,
+    @SerializedName("threat_intel") val threatIntel: ThreatIntelStatusDto? = null
 )
 
 data class MlServiceStatusDto(

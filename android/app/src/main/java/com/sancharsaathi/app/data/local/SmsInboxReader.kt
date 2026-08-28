@@ -20,14 +20,12 @@ class SmsInboxReader(
 ) {
 
     fun getLatestInboxMessages(limit: Int = 10): List<PhoneSmsMessage> {
-        runForensicSearchForRaghib(context)
-
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("SmsInboxReader", "SMS_READ_PERMISSION=DENIED")
+            Log.d("SmsInboxReader", "READ_SMS_PERMISSION=false")
             return emptyList()
         }
 
-        Log.d("SmsInboxReader", "SMS_READ_PERMISSION=GRANTED")
+        Log.d("SmsInboxReader", "READ_SMS_PERMISSION=true")
         Log.d("SmsInboxReader", "SMS_QUERY_STARTED: limit=$limit")
 
         val messages = mutableListOf<PhoneSmsMessage>()
@@ -38,7 +36,7 @@ class SmsInboxReader(
             val cursor = context.contentResolver.query(
                 smsUri,
                 projection,
-                null, // Query all SMS messages (including spam, inbox, sent, and blocked)
+                null, // Query all SMS (inbox, sent, spam, blocked)
                 null,
                 "date DESC"
             )
@@ -49,29 +47,29 @@ class SmsInboxReader(
                 val bodyCol = c.getColumnIndex("body")
                 val dateCol = c.getColumnIndex("date")
 
-                Log.d("SmsInboxReader", "SMS_QUERY_RESULT_COUNT=${c.count}")
+                Log.d("SmsInboxReader", "SMS_PROVIDER_QUERY_COUNT=${c.count}")
 
                 var count = 0
                 while (c.moveToNext() && count < limit) {
-                    val id = if (idCol != -1) c.getLong(idCol) else System.currentTimeMillis()
+                    val id = if (idCol != -1) c.getLong(idCol) else -1L
                     val sender = if (addressCol != -1) c.getString(addressCol) ?: "Unknown" else "Unknown"
                     val body = if (bodyCol != -1) c.getString(bodyCol) ?: "" else ""
                     var date = if (dateCol != -1) c.getLong(dateCol) else System.currentTimeMillis()
                     
-                    // Normalize timestamp to milliseconds if returned in seconds
                     if (date < 10000000000L) {
                         date *= 1000
                     }
 
                     if (body.isNotBlank()) {
                         messages.add(PhoneSmsMessage(id, sender, body, date))
-                        Log.d("SmsInboxReader", "SMS_INBOX_ITEM: phoneSmsId=$id, sender=$sender, timestamp=$date")
                         count++
                     }
                 }
             }
+            val newestMsg = messages.firstOrNull()
+            Log.d("SancharSaathiSms", "[HISTORY_SCAN] ${messages.size} | ${newestMsg?.id ?: -1} | ${newestMsg?.timestamp ?: -1}")
         } catch (e: Exception) {
-            Log.e("SmsInboxReader", "Error reading SMS inbox: ${e.message}", e)
+            Log.e("SancharSaathiSms", "Error reading SMS inbox: ${e.message}", e)
         }
 
         return messages
@@ -165,6 +163,28 @@ class SmsInboxReader(
                 Log.d("ForensicSearch", "RAGHIB_ACCESSIBILITY_DETERMINATION: Message is likely RCS (Rich Communication Services) or Samsung Chat Message, which is private to Samsung Messages app and not exposed to third-party apps through Telephony.Sms or Telephony.Mms Content Providers on Samsung devices.")
             }
         }
+    }
+
+    fun findProviderId(sender: String, body: String): Long? {
+        val smsUri = Uri.parse("content://sms")
+        val projection = arrayOf("_id")
+        try {
+            val cursor = context.contentResolver.query(
+                smsUri,
+                projection,
+                "address = ? AND body = ?",
+                arrayOf(sender, body),
+                "date DESC"
+            )
+            cursor?.use { c ->
+                if (c.moveToFirst()) {
+                    return c.getLong(c.getColumnIndexOrThrow("_id"))
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("SmsInboxReader", "Error finding provider ID: ${e.message}")
+        }
+        return null
     }
 
     fun generateStableId(sender: String, body: String, timestamp: Long): String {

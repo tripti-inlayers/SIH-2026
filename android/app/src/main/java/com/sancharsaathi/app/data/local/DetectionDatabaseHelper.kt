@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+import com.sancharsaathi.app.domain.model.ThreatIntelInfo
+
 data class DetectionEntity(
     val analysisId: String,
     val source: String,
@@ -32,7 +34,8 @@ data class DetectionEntity(
     val detectedUrl: String?,
     val matchedTemplate: String?,
     val createdAt: Long,
-    val analyzedAt: Long
+    val analyzedAt: Long,
+    val threatIntel: ThreatIntelInfo? = null
 )
 
 class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -61,15 +64,21 @@ class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATA
                 detected_url TEXT,
                 matched_template TEXT,
                 created_at INTEGER NOT NULL,
-                analyzed_at INTEGER NOT NULL
+                analyzed_at INTEGER NOT NULL,
+                web_risk TEXT
             );
         """.trimIndent()
         db.execSQL(createTableSql)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
-        onCreate(db)
+        if (oldVersion < 2) {
+            try {
+                db.execSQL("ALTER TABLE $TABLE_NAME ADD COLUMN web_risk TEXT;")
+            } catch (e: Exception) {
+                // Ignore if column already exists
+            }
+        }
     }
 
     fun upsertDetection(entity: DetectionEntity) {
@@ -93,6 +102,7 @@ class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATA
             put("matched_template", entity.matchedTemplate)
             put("created_at", entity.createdAt)
             put("analyzed_at", entity.analyzedAt)
+            put("web_risk", entity.threatIntel?.let { gson.toJson(it) })
         }
         db.insertWithOnConflict(TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE)
         _dbUpdateSignal.value = System.currentTimeMillis()
@@ -125,7 +135,11 @@ class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATA
 
     fun getDetectionById(analysisId: String): DetectionEntity? {
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME WHERE analysis_id = ? LIMIT 1", arrayOf(analysisId))
+        val altId = if (analysisId.startsWith("SMS-")) analysisId.removePrefix("SMS-") else "SMS-$analysisId"
+        val cursor = db.rawQuery(
+            "SELECT * FROM $TABLE_NAME WHERE analysis_id = ? OR analysis_id = ? LIMIT 1",
+            arrayOf(analysisId, altId)
+        )
         cursor.use {
             if (it.moveToFirst()) {
                 return cursorToEntity(it)
@@ -146,6 +160,16 @@ class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATA
         val signals: List<RiskSignal> = gson.fromJson(signalsJson, signalListType) ?: emptyList()
         val urls: List<String> = gson.fromJson(urlsJson, stringListType) ?: emptyList()
 
+        val webRiskColIndex = cursor.getColumnIndex("web_risk")
+        val webRiskJson = if (webRiskColIndex != -1) cursor.getString(webRiskColIndex) else null
+        val threatIntel: ThreatIntelInfo? = if (!webRiskJson.isNullOrBlank()) {
+            try {
+                gson.fromJson(webRiskJson, ThreatIntelInfo::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        } else null
+
         return DetectionEntity(
             analysisId = cursor.getString(cursor.getColumnIndexOrThrow("analysis_id")),
             source = cursor.getString(cursor.getColumnIndexOrThrow("source")),
@@ -164,13 +188,14 @@ class DetectionDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATA
             detectedUrl = cursor.getString(cursor.getColumnIndexOrThrow("detected_url")),
             matchedTemplate = cursor.getString(cursor.getColumnIndexOrThrow("matched_template")),
             createdAt = cursor.getLong(cursor.getColumnIndexOrThrow("created_at")),
-            analyzedAt = cursor.getLong(cursor.getColumnIndexOrThrow("analyzed_at"))
+            analyzedAt = cursor.getLong(cursor.getColumnIndexOrThrow("analyzed_at")),
+            threatIntel = threatIntel
         )
     }
 
     companion object {
         const val DATABASE_NAME = "sancharsaathi.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val TABLE_NAME = "detection_history"
     }
 }

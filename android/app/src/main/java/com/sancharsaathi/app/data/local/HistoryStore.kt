@@ -72,7 +72,8 @@ class HistoryStore(context: Context? = null) {
             detectedUrl = result.detectedUrl,
             matchedTemplate = result.signals.firstOrNull { it.category == "local_template" }?.code,
             createdAt = System.currentTimeMillis(),
-            analyzedAt = System.currentTimeMillis()
+            analyzedAt = System.currentTimeMillis(),
+            threatIntel = result.threatIntel
         )
     }
 
@@ -99,7 +100,8 @@ class HistoryStore(context: Context? = null) {
             degraded = entity.status == "ERROR" || entity.status == "PENDING",
             degradedReason = if (entity.status == "ERROR") "backend_offline" else null,
             smsBody = entity.message,
-            timestamp = entity.timestamp
+            timestamp = entity.timestamp,
+            threatIntel = entity.threatIntel
         )
     }
 }

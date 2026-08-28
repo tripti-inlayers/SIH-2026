@@ -35,17 +35,23 @@ class AnalysisRepositoryImpl(
                 val dto = response.body()!!
                 android.util.Log.d("SancharSaathiAnalysis", "BACKEND_RAW_RESPONSE_RECEIVED=true")
                 android.util.Log.d("SancharSaathiAnalysis", "BACKEND_SCORE=${dto.riskScore}, BACKEND_RISK_LEVEL=${dto.riskLevel}, BACKEND_CONFIDENCE=${dto.confidence}, BACKEND_SIGNALS_COUNT=${dto.signals.size}")
-                val result = mapDtoToDomain(dto)
-                android.util.Log.d("SancharSaathiAnalysis", "FINAL_RISK_SCORE=${result.riskScore}, FINAL_RISK_LEVEL=${result.riskLevel}")
-                historyStore.add(result, source = request.source)
+                val rawResult = mapDtoToDomain(dto)
+                val result = rawResult.copy(analysisId = request.messageId)
+                android.util.Log.d("SancharSaathiAnalysis", "FINAL_RISK_SCORE=${result.riskScore}, FINAL_RISK_LEVEL=${result.riskLevel}, id=${result.analysisId}")
+                historyStore.add(result, source = request.source, status = "COMPLETED")
                 NetworkResult.Success(result)
             } else {
                 val errBody = response.errorBody()?.string() ?: ""
                 android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_FAILED: status=${response.code()}, error=$errBody")
-                NetworkResult.Failure(
-                    reason = FailureReason.SERVER_ERROR,
-                    message = "Server returned error status ${response.code()}: $errBody"
-                )
+                val onDeviceResult = com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+                    analysisId = request.messageId,
+                    text = request.text,
+                    sender = request.senderId,
+                    timestamp = request.timestampEpochMillis,
+                    source = request.source
+                ).copy(degraded = true, degradedReason = "server_error_${response.code()}")
+                historyStore.add(onDeviceResult, source = request.source, status = "COMPLETED")
+                NetworkResult.Success(onDeviceResult)
             }
         } catch (e: SocketTimeoutException) {
             android.util.Log.e("SancharSaathiAnalysis", "BACKEND_ANALYSIS_TIMEOUT: ${e.message}. Executing OnDeviceSecurityEngine...")
@@ -117,7 +123,22 @@ class AnalysisRepositoryImpl(
             sender = dto.sender,
             modelVersion = dto.modelVersion,
             degraded = dto.degraded,
-            degradedReason = dto.degradedReason
+            degradedReason = dto.degradedReason,
+            threatIntel = dto.threatIntel?.let {
+                com.sancharsaathi.app.domain.model.ThreatIntelInfo(
+                    provider = it.provider,
+                    checked = it.checked,
+                    reachable = it.reachable,
+                    threat = it.threat,
+                    riskScore = it.riskScore,
+                    severity = it.severity,
+                    flags = it.flags,
+                    matchedKeywords = it.matchedKeywords,
+                    error = it.error,
+                    degraded = it.degraded,
+                    verdict = it.verdict
+                )
+            }
         )
     }
 }
