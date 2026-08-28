@@ -21,13 +21,22 @@ async def test_analyze_endpoint_success():
         "timestamp_epoch_millis": 1700000000000,
         "source": "DEMO"
     }
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        resp = await client.post("/api/v1/analyze", json=payload)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "risk_level" in data
-        assert "risk_score" in data
-        assert data["risk_level"] == "LOW"
+    with patch("app.services.ml_analysis.httpx.AsyncClient") as mock_client_class:
+        mock_instance = AsyncMock()
+        mock_client_class.return_value.__aenter__.return_value = mock_instance
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"prediction": 0, "label": "ham", "confidence": 0.95}
+        mock_response.raise_for_status.return_value = None
+        mock_response.status_code = 200
+        mock_instance.post.return_value = mock_response
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.post("/api/v1/analyze", json=payload)
+            assert resp.status_code == 200
+            data = resp.json()
+            assert "risk_level" in data
+            assert "risk_score" in data
+            assert data["risk_level"] == "LOW"
 
 from unittest.mock import patch, AsyncMock, MagicMock
 

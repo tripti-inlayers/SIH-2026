@@ -20,7 +20,7 @@ async def test_ml_prediction_1(ml_service):
         assert signal is not None
         assert signal.triggered is True
         assert signal.code == "AI_SPAM_DETECTED"
-        assert signal.weight == 0.35
+        assert signal.weight == 0.50
 
 @pytest.mark.asyncio
 async def test_ml_prediction_0(ml_service):

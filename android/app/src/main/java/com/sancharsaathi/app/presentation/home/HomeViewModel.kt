@@ -36,6 +36,17 @@ class HomeViewModel(
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     init {
+        // Eagerly warm up backend connection on home screen load
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val targetUrl = AppModule.networkConfigStore.getBaseUrl()
+                val health = AppModule.apiService.health()
+                Log.d("HomeViewModel", "HOME_STARTUP_HEALTH: Connected to $targetUrl (status=${health.body()?.status})")
+            } catch (e: Exception) {
+                Log.d("HomeViewModel", "HOME_STARTUP_HEALTH: Warmup ping (${e.message})")
+            }
+        }
+
         // Listen to live broadcast receiver events to refresh inbox instantly
         viewModelScope.launch {
             com.sancharsaathi.app.domain.capture.SmsCaptureChannel.events.collect {

@@ -35,3 +35,4 @@ class UrlAnalyzeResponse(BaseModel):
     url: str
     signals: List[RiskSignal]
     url_risk_score: int
+    web_risk: Optional[dict] = None

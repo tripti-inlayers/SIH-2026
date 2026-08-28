@@ -16,6 +16,13 @@ setup_logging()
 async def lifespan(app: FastAPI):
     logger.info("Initializing SancharSaathi Backend Service...")
     init_db()
+    
+    # Safe startup notification without logging the API key
+    if settings.GOOGLE_WEBRISK_API_KEY:
+        logger.info("Google Web Risk configured: YES")
+    else:
+        logger.info("Google Web Risk configured: NO")
+        
     yield
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])

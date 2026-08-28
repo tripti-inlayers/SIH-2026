@@ -20,11 +20,24 @@ async def health_check():
     except Exception as e:
         ml_status = {"status": "unavailable", "details": str(e)}
 
+    webrisk_configured = bool(settings.GOOGLE_WEBRISK_API_KEY)
+    webrisk_status = {
+        "configured": webrisk_configured,
+        "provider": settings.THREAT_INTEL_PROVIDER,
+        "threat_types": [
+            "MALWARE",
+            "SOCIAL_ENGINEERING",
+            "UNWANTED_SOFTWARE",
+            "SOCIAL_ENGINEERING_EXTENDED_COVERAGE"
+        ]
+    }
+
     return HealthResponse(
         status="ok",
         database=db_status,
         threat_intel_provider=settings.THREAT_INTEL_PROVIDER,
         identity_provider=settings.IDENTITY_PROVIDER,
         version="1.0.0",
-        ml_service=ml_status
+        ml_service=ml_status,
+        google_web_risk=webrisk_status
     )

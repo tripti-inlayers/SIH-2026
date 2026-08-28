@@ -2,6 +2,8 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 
+from unittest.mock import patch, AsyncMock, MagicMock
+
 @pytest.mark.asyncio
 async def test_demo_scenario_1_low_risk():
     payload = {
@@ -13,13 +15,22 @@ async def test_demo_scenario_1_low_risk():
         "timestamp_epoch_millis": 1700000000000,
         "source": "DEMO"
     }
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        res = await client.post("/api/v1/analyze", json=payload)
-        assert res.status_code == 200
-        data = res.json()
-        assert data["risk_level"] == "LOW"
-        assert data["should_block"] is False
-        assert data["should_report"] is False
+    with patch("app.services.ml_analysis.httpx.AsyncClient") as mock_client_class:
+        mock_instance = AsyncMock()
+        mock_client_class.return_value.__aenter__.return_value = mock_instance
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"prediction": 0, "label": "ham", "confidence": 0.95}
+        mock_response.raise_for_status.return_value = None
+        mock_response.status_code = 200
+        mock_instance.post.return_value = mock_response
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res = await client.post("/api/v1/analyze", json=payload)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["risk_level"] == "LOW"
+            assert data["should_block"] is False
+            assert data["should_report"] is False
 
 @pytest.mark.asyncio
 async def test_demo_scenario_2_suspicious():
@@ -32,13 +43,22 @@ async def test_demo_scenario_2_suspicious():
         "timestamp_epoch_millis": 1700000000000,
         "source": "DEMO"
     }
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        res = await client.post("/api/v1/analyze", json=payload)
-        assert res.status_code == 200
-        data = res.json()
-        assert data["risk_level"] == "SUSPICIOUS"
-        assert data["should_block"] is False
-        assert data["should_report"] is False
+    with patch("app.services.ml_analysis.httpx.AsyncClient") as mock_client_class:
+        mock_instance = AsyncMock()
+        mock_client_class.return_value.__aenter__.return_value = mock_instance
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"prediction": 0, "label": "ham", "confidence": 0.70}
+        mock_response.raise_for_status.return_value = None
+        mock_response.status_code = 200
+        mock_instance.post.return_value = mock_response
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            res = await client.post("/api/v1/analyze", json=payload)
+            assert res.status_code == 200
+            data = res.json()
+            assert data["risk_level"] == "SUSPICIOUS"
+            assert data["should_block"] is False
+            assert data["should_report"] is False
 
 @pytest.mark.asyncio
 async def test_demo_scenario_3_high_risk():

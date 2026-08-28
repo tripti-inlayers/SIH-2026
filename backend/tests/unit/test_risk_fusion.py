@@ -20,21 +20,21 @@ def test_risk_fusion_level_mapping_boundaries():
     assert score == 35
     assert level == RiskLevel.LOW
 
-    # Triggered signals summing to 0.40 -> score 40 -> SUSPICIOUS
+    # Triggered signals summing to 0.55 -> score 55 -> SUSPICIOUS
     sig_susp = [
-        RiskSignal(category="message", code="URGENCY", description="Urgent", technical_detail="", weight=0.40, triggered=True)
+        RiskSignal(category="message", code="URGENCY", description="Urgent", technical_detail="", weight=0.55, triggered=True)
     ]
     score, level, conf, reasons, action, block, report = engine.fuse(sig_susp, has_url=True)
-    assert score == 40
+    assert score == 55
     assert level == RiskLevel.SUSPICIOUS
 
-    # Triggered signals summing to 0.75 -> score 75 -> HIGH
+    # Triggered signals summing to 0.85 -> score 85 -> HIGH
     sig_high = [
-        RiskSignal(category="message", code="CREDENTIAL", description="Cred", technical_detail="", weight=0.40, triggered=True),
-        RiskSignal(category="url", code="LOOKALIKE", description="Lookalike", technical_detail="", weight=0.35, triggered=True)
+        RiskSignal(category="message", code="CREDENTIAL", description="Cred", technical_detail="", weight=0.45, triggered=True),
+        RiskSignal(category="url", code="LOOKALIKE", description="Lookalike", technical_detail="", weight=0.40, triggered=True)
     ]
     score, level, conf, reasons, action, block, report = engine.fuse(sig_high, has_url=True)
-    assert score == 75
+    assert score == 85
     assert level == RiskLevel.HIGH
     assert block is True
     assert report is True
