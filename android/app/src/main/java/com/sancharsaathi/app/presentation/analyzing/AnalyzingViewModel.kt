@@ -43,19 +43,14 @@ class AnalyzingViewModel(
     }
 
     fun getUnverifiedFallbackResult(request: AnalysisRequest): RiskResult {
-        return RiskResult(
-            analysisId = "UNVERIFIED-${request.messageId}",
-            riskScore = 0,
-            riskLevel = RiskLevel.LOW,
-            confidence = 0.0,
-            reasons = listOf("Unverified — Security analysis offline."),
-            signals = emptyList(),
-            recommendedAction = "Verification unavailable — proceed with caution.",
-            shouldBlock = false,
-            shouldReport = false,
-            detectedUrl = request.urls.firstOrNull(),
+        return com.sancharsaathi.app.domain.engine.OnDeviceSecurityEngine.analyze(
+            analysisId = request.messageId,
+            text = request.text,
             sender = request.senderId,
-            modelVersion = "1.0.0",
+            timestamp = request.timestampEpochMillis,
+            source = request.source
+        ).copy(
+            analysisId = "UNVERIFIED-${request.messageId}",
             degraded = true,
             degradedReason = "backend_unreachable"
         )

@@ -4,11 +4,16 @@ from app.services.threat_intel.base import ThreatIntelResult, ThreatIntelVerdict
 from app.config import settings
 from app.core.logging import logger
 
+_UNSET = object()
+
 class GoogleWebRiskProvider:
     """Live integration with Google Web Risk API."""
 
-    def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or settings.GOOGLE_WEBRISK_API_KEY
+    def __init__(self, api_key: Optional[str] = _UNSET):
+        if api_key is _UNSET:
+            self.api_key = settings.GOOGLE_WEBRISK_API_KEY
+        else:
+            self.api_key = api_key
 
     async def lookup(self, url: str) -> ThreatIntelResult:
         if not self.api_key:

@@ -43,17 +43,25 @@ class MockSpamMessageDetector:
             return prediction, probs
         return prediction
 
+import os
+
 @app.on_event("startup")
 async def load_model():
     global detector
     model_path = "./finetuned_model"
-    if MOCK_MODE:
-        logging.info(f"Initializing MOCK RoBERTa model from {model_path}...")
+    model_exists = os.path.exists(model_path) and os.path.isdir(model_path) and len(os.listdir(model_path)) > 0
+
+    if MOCK_MODE or not model_exists:
+        logging.info(f"Initializing MOCK RoBERTa model (MOCK_MODE={MOCK_MODE}, model_exists={model_exists})...")
         detector = MockSpamMessageDetector(model_path=model_path)
     else:
         logging.info(f"Loading finetuned RoBERTa model from {model_path}...")
-        detector = SpamMessageDetector(model_path=model_path)
-    logging.info("Model loaded successfully.")
+        try:
+            detector = SpamMessageDetector(model_path=model_path)
+            logging.info("Fine-tuned RoBERTa model loaded successfully.")
+        except Exception as e:
+            logging.error(f"Failed to load finetuned model: {e}. Falling back to MOCK detector.")
+            detector = MockSpamMessageDetector(model_path=model_path)
 
 @app.post("/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):

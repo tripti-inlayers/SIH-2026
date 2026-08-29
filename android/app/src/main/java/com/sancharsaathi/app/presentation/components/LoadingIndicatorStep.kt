@@ -8,7 +8,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import kotlinx.coroutines.delay
 
 @Composable
@@ -16,13 +18,13 @@ fun LoadingIndicatorStep(
     modifier: Modifier = Modifier,
     onAllStepsCompleted: (() -> Unit)? = null
 ) {
-    val steps = remember {
-        listOf(
-            "Checking this message...",
-            "Analyzing message",
-            "Checking link",
-            "Verifying sender"
-        )
+    val step1 = stringResource(id = R.string.step_checking_msg)
+    val step2 = stringResource(id = R.string.step_analyzing_msg)
+    val step3 = stringResource(id = R.string.step_checking_link)
+    val step4 = stringResource(id = R.string.step_verifying_sender)
+
+    val steps = remember(step1, step2, step3, step4) {
+        listOf(step1, step2, step3, step4)
     }
     var currentStepIndex by remember { mutableIntStateOf(0) }
 

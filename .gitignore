@@ -17,3 +17,9 @@ local.properties
 # Environment / secrets
 .env
 .env.*
+
+# Node / Frontend
+node_modules/
+**/node_modules/
+dist/
+**/dist/

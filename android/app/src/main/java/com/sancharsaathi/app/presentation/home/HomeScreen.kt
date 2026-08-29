@@ -1,34 +1,30 @@
 package com.sancharsaathi.app.presentation.home
 
-import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.AnalysisRequest
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.EmptyState
+import com.sancharsaathi.app.presentation.components.PrimaryButton
 import com.sancharsaathi.app.presentation.components.RiskBadge
 import com.sancharsaathi.app.presentation.theme.RiskColors
 
@@ -42,9 +38,20 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val manualInputText by viewModel.manualInputText.collectAsState()
-    val clipboardManager = LocalClipboardManager.current
-    val context = LocalContext.current
+    var manualInputText by remember { mutableStateOf("") }
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshInbox()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -52,84 +59,90 @@ fun HomeScreen(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Default.Shield,
+                            imageVector = Icons.Default.Security,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(28.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "SANCHAR SAATHI",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = "Department of Telecommunications | AI Phishing Defense",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(id = R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.refreshInbox() }) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(id = R.string.refresh_feed))
+                    }
                     IconButton(onClick = onNavigateToHistory) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Icon(Icons.Default.History, contentDescription = stringResource(id = R.string.history))
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings))
                     }
                 }
             )
         }
     ) { padding ->
         LazyColumn(
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // 1. Protection Active Banner
+            // 1. Protection Active Status Card
             item {
                 Card(
-                    colors = CardDefaults.cardColors(containerColor = RiskColors.lowSurface),
+                    colors = CardDefaults.cardColors(
+                        containerColor = RiskColors.lowSurface
+                    ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .semantics { contentDescription = "Security Protection Active status" }
+                        .semantics { contentDescription = "Protection Active status card" }
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.VerifiedUser,
+                            imageVector = Icons.Default.Security,
                             contentDescription = null,
                             tint = RiskColors.lowText,
-                            modifier = Modifier.size(36.dp)
+                            modifier = Modifier.size(32.dp)
                         )
-                        Spacer(modifier = Modifier.width(14.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Real-Time Protection Active",
+                                text = stringResource(id = R.string.protection_active),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = RiskColors.lowText,
                                 fontWeight = FontWeight.Bold
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Live SMS Interceptor & RoBERTa AI neural model are monitoring incoming threats.",
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = stringResource(id = R.string.protection_active_desc),
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // 2. Manual Message Analysis Input Card
+            // 2. Manual Analysis Input Card
             item {
+                Text(
+                    text = stringResource(id = R.string.analyze_message_or_link),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Card(
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -139,118 +152,61 @@ fun HomeScreen(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Analyze Message or Link",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                text = stringResource(id = R.string.paste_instruction),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         OutlinedTextField(
                             value = manualInputText,
-                            onValueChange = { viewModel.onManualInputTextChange(it) },
-                            placeholder = { Text("Paste suspicious SMS, WhatsApp message, or URL here...") },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 90.dp),
-                            maxLines = 4,
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    val clip = clipboardManager.getText()?.text
-                                    if (!clip.isNullOrBlank()) {
-                                        viewModel.onManualInputTextChange(clip)
-                                        Toast.makeText(context, "Pasted from clipboard", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Clipboard is empty", Toast.LENGTH_SHORT).show()
-                                    }
-                                }) {
-                                    Icon(Icons.Default.ContentPaste, contentDescription = "Paste Clipboard")
-                                }
-                            }
+                            onValueChange = { manualInputText = it },
+                            placeholder = { Text(stringResource(id = R.string.paste_placeholder)) },
+                            minLines = 3,
+                            maxLines = 5,
+                            modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Button(
+                        PrimaryButton(
+                            text = stringResource(id = R.string.analyze),
                             onClick = {
-                                val req = viewModel.buildManualAnalysisRequest(manualInputText)
-                                if (req != null) {
+                                if (manualInputText.isNotBlank()) {
+                                    val req = viewModel.createManualAnalysisRequest(manualInputText)
+                                    manualInputText = ""
                                     onNavigateToAnalyzing(req)
-                                } else {
-                                    Toast.makeText(context, "Please enter message text first", Toast.LENGTH_SHORT).show()
                                 }
                             },
-                            enabled = manualInputText.isNotBlank(),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
-                        ) {
-                            Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("ANALYZE MESSAGE", fontWeight = FontWeight.Bold)
-                        }
+                            enabled = manualInputText.isNotBlank()
+                        )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            // 3. Quick Demo Scenario Buttons
+            // 3. Recent Message Detections Header
             item {
-                Text(
-                    text = "SIH Judge Demo Scenarios",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(1)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.lowSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp)
-                    ) {
-                        Text("Low Risk", color = RiskColors.lowText, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(2)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.suspiciousSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp)
-                    ) {
-                        Text("Suspicious", color = RiskColors.suspiciousText, fontWeight = FontWeight.Bold)
-                    }
-
-                    Button(
-                        onClick = {
-                            val req = viewModel.launchDemoScenario(3)
-                            onNavigateToAnalyzing(req)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = RiskColors.highSurface),
-                        modifier = Modifier.weight(1f).heightIn(min = 44.dp)
-                    ) {
-                        Text("High Risk", color = RiskColors.highText, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = stringResource(id = R.string.recent_detections),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = onNavigateToHistory) {
+                        Text(stringResource(id = R.string.see_all))
                     }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // 4. Recent Detections List
-            item {
-                Text(
-                    text = "Recent Message Detections",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
             when (uiState) {
                 is HomeUiState.Loading -> {
                     item {
@@ -261,7 +217,7 @@ fun HomeScreen(
                     val list = (uiState as HomeUiState.Success).recentAnalyses
                     if (list.isEmpty()) {
                         item {
-                            EmptyState(message = "No messages detected yet. Enter text above or trigger a live SMS.")
+                            EmptyState(message = stringResource(id = R.string.empty_recent_detections))
                         }
                     } else {
                         items(list) { item ->
@@ -270,40 +226,6 @@ fun HomeScreen(
                                 onClick = { onNavigateToResult(item.analysisId) }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
-                }
-            }
-
-            // 5. Cybercrime Helpline & Safety Tips Banner
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "DoT Cybercrime Helpline: 1930",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "Report financial fraud immediately within 2 hours on national cybercrime portal.",
-                                style = MaterialTheme.typography.bodySmall
-                            )
                         }
                     }
                 }
@@ -317,6 +239,12 @@ fun RecentActivityCard(
     result: RiskResult,
     onClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val contactName = remember(result.sender) {
+        com.sancharsaathi.app.data.local.ContactHelper.getContactName(context, result.sender)
+    }
+    val displayName = contactName ?: result.sender ?: "Unknown Sender"
+
     Card(
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
@@ -326,23 +254,56 @@ fun RecentActivityCard(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(14.dp)
+            modifier = Modifier.padding(16.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                val formattedTime = remember(result.timestamp) {
+                    if (result.timestamp > 0L) {
+                        try {
+                            val sdf = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
+                            sdf.format(java.util.Date(result.timestamp))
+                        } catch (e: Exception) {
+                            ""
+                        }
+                    } else ""
+                }
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (contactName != null && result.sender != null && result.sender != contactName) {
+                            Text(
+                                text = result.sender,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (formattedTime.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = formattedTime,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = result.sender ?: "Unknown Sender",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = result.detectedUrl ?: (result.reasons.firstOrNull() ?: "Message analysis"),
+                    text = result.smsBody ?: (result.detectedUrl ?: (result.reasons.firstOrNull() ?: "Message analysis")),
                     style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1
+                    maxLines = 2
                 )
             }
-            Spacer(modifier = Modifier.width(10.dp))
-            RiskBadge(riskLevel = result.riskLevel, riskScore = result.riskScore)
+            Spacer(modifier = Modifier.width(12.dp))
+            RiskBadge(riskLevel = result.riskLevel, riskScore = result.riskScore, degraded = result.degraded)
         }
     }
 }

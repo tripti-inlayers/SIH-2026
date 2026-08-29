@@ -5,7 +5,8 @@ DEMO_SAFE_DOMAINS = {"indiapost.gov.in", "www.indiapost.gov.in", "amazon.in", "b
 DEMO_MALICIOUS_DOMAINS = {
     "secure-bank0findia-verify.xyz", "bank0findia.xyz", 
     "incometaxindia-refund-gov.in.weebly.com",
-    "sbi-yono-kyc-update.com", "pay-electricity-bill-online.xyz"
+    "sbi-yono-kyc-update.com", "pay-electricity-bill-online.xyz",
+    "0000000000000000000000000.findyourjacket.com", "findyourjacket.com"
 }
 
 class MockThreatIntelProvider:

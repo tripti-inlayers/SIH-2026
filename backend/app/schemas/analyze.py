@@ -2,6 +2,19 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from app.schemas.common import RiskLevel, CaptureSource, RiskSignal
 
+class ThreatIntelInfo(BaseModel):
+    provider: str = "multi"
+    checked: bool = False
+    reachable: bool = False
+    threat: bool = False
+    risk_score: int = 0
+    severity: Optional[str] = None
+    flags: List[str] = Field(default_factory=list)
+    matched_keywords: List[str] = Field(default_factory=list)
+    error: Optional[str] = None
+    degraded: bool = False
+    verdict: str = "UNAVAILABLE"
+
 class AnalyzeRequest(BaseModel):
     message_id: str
     text: str = Field(..., max_length=5000)
@@ -11,6 +24,21 @@ class AnalyzeRequest(BaseModel):
     language: Optional[str] = None
     timestamp_epoch_millis: int
     source: CaptureSource
+
+class TraiIdentityInfo(BaseModel):
+    checked: bool = False
+    verified: bool = False
+    is_dlt_header: bool = False
+    header: Optional[str] = None
+    normalized_header: Optional[str] = None
+    entity_name: Optional[str] = None
+    brand_name: Optional[str] = None
+    category: Optional[str] = None
+    purpose: Optional[str] = None
+    source: str = "TRAI Header Information Portal"
+    status_label: str = "Unverified Sender"
+    lookalike_warning: bool = False
+    error: Optional[str] = None
 
 class RiskResultResponse(BaseModel):
     analysis_id: str
@@ -27,6 +55,8 @@ class RiskResultResponse(BaseModel):
     model_version: str = "1.0.0"
     degraded: bool = False
     degraded_reason: Optional[str] = None
+    threat_intel: Optional[ThreatIntelInfo] = None
+    trai_identity: Optional[TraiIdentityInfo] = None
 
 class UrlAnalyzeRequest(BaseModel):
     url: str
@@ -35,3 +65,25 @@ class UrlAnalyzeResponse(BaseModel):
     url: str
     signals: List[RiskSignal]
     url_risk_score: int
+    threat_intel: Optional[ThreatIntelInfo] = None
+
+class DiagnosticAnalyzeRequest(BaseModel):
+    text: str
+    urls: List[str] = Field(default_factory=list)
+    sender_id: Optional[str] = None
+    mock_webrisk_verdict: Optional[str] = None
+
+class DiagnosticAnalyzeResponse(BaseModel):
+    text: str
+    url: Optional[str] = None
+    webrisk_request_status: str
+    webrisk_matched_threat_types: List[str]
+    webrisk_normalized_signal: Optional[RiskSignal] = None
+    webrisk_contribution_points: int
+    ml_score_points: int
+    heuristic_score_points: int
+    identity_score_points: int
+    final_fused_score: int
+    final_risk_level: RiskLevel
+    degraded: bool
+    degraded_reasons: List[str]

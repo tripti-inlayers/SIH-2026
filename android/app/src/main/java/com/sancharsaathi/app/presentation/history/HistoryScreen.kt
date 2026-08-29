@@ -8,7 +8,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.presentation.components.AppTopBar
 import com.sancharsaathi.app.presentation.components.EmptyState
 import com.sancharsaathi.app.presentation.home.RecentActivityCard
@@ -23,7 +25,7 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Analysis History", onBackClick = onNavigateBack)
+            AppTopBar(title = stringResource(id = R.string.analysis_history), onBackClick = onNavigateBack)
         }
     ) { padding ->
         Box(
@@ -32,7 +34,7 @@ fun HistoryScreen(
                 .padding(padding)
         ) {
             if (historyList.isEmpty()) {
-                EmptyState(message = "No messages checked yet.")
+                EmptyState(message = stringResource(id = R.string.no_messages_checked))
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),

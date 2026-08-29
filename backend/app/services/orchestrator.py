@@ -2,7 +2,7 @@ import asyncio
 import uuid
 import re
 from typing import List, Optional
-from app.schemas.analyze import AnalyzeRequest, RiskResultResponse
+from app.schemas.analyze import AnalyzeRequest, RiskResultResponse, ThreatIntelInfo
 from app.schemas.common import RiskSignal
 from app.services.message_analysis import MessageAnalysisService
 from app.services.url_analysis import UrlAnalysisService
@@ -10,6 +10,7 @@ from app.services.url_expansion import UrlExpanderService, ExpandedUrlResult
 from app.services.threat_intel.base import ThreatIntelVerdict
 from app.services.threat_intel.multi_provider import MultiThreatIntelProvider
 from app.services.identity.dlt_mock_provider import DltMockIdentityProvider
+from app.services.identity.trai_registry import TraiHeaderRegistryProvider
 from app.services.risk_fusion import RiskFusionEngine
 from app.services.ml_analysis import MlAnalysisService
 from app.repositories.analysis_repository import get_analysis_repository
@@ -24,6 +25,7 @@ class AnalysisOrchestrator:
         self.ml_service = MlAnalysisService()
         self.threat_intel_provider = MultiThreatIntelProvider()
         self.identity_provider = DltMockIdentityProvider()
+        self.trai_provider = TraiHeaderRegistryProvider()
         self.fusion_engine = RiskFusionEngine()
         self.repo = get_analysis_repository()
 
@@ -102,6 +104,7 @@ class AnalysisOrchestrator:
                     degraded_reasons.append("url_analysis_timeout")
 
         # 3. Concurrent Threat Intelligence Lookup for ALL resolved URLs
+        primary_threat_intel_info: Optional[ThreatIntelInfo] = None
         if resolved_urls:
             try:
                 intel_tasks = [self.threat_intel_provider.lookup(exp.resolved_url) for exp in resolved_urls]
@@ -114,6 +117,21 @@ class AnalysisOrchestrator:
 
                     target_exp = resolved_urls[idx]
                     verdict = threat_res.verdict
+                    if idx == 0:
+                        primary_threat_intel_info = ThreatIntelInfo(
+                            provider=threat_res.source,
+                            checked=True,
+                            reachable=True,
+                            threat=(verdict == ThreatIntelVerdict.KNOWN_MALICIOUS),
+                            risk_score=85 if verdict == ThreatIntelVerdict.KNOWN_MALICIOUS else 0,
+                            severity="CRITICAL" if verdict == ThreatIntelVerdict.KNOWN_MALICIOUS else "LOW",
+                            flags=[threat_res.detail] if threat_res.detail else [],
+                            matched_keywords=[],
+                            error=None,
+                            degraded=False,
+                            verdict=verdict.value
+                        )
+
                     if verdict == ThreatIntelVerdict.KNOWN_MALICIOUS:
                         all_signals.append(RiskSignal(
                             category="threat_intel",
@@ -148,16 +166,24 @@ class AnalysisOrchestrator:
 
         # 4. Identity Verification Signals
         all_url_strings = [exp.resolved_url for exp in resolved_urls] if resolved_urls else target_urls
+        trai_info = None
         try:
-            id_task = asyncio.create_task(
-                self.identity_provider.verify(request.sender_id, request.claimed_organization, all_url_strings)
+            trai_signals, trai_info = await self.trai_provider.verify(
+                request.sender_id, request.claimed_organization, all_url_strings
             )
-            id_signals = await asyncio.wait_for(id_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
-            all_signals.extend(id_signals)
+            all_signals.extend(trai_signals)
         except Exception as e:
-            logger.error(f"Identity verification failed or timed out: {e}")
-            degraded = True
-            degraded_reasons.append("identity_verification_timeout")
+            logger.error(f"TRAI header verification failed or timed out: {e}")
+            try:
+                id_task = asyncio.create_task(
+                    self.identity_provider.verify(request.sender_id, request.claimed_organization, all_url_strings)
+                )
+                id_signals = await asyncio.wait_for(id_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
+                all_signals.extend(id_signals)
+            except Exception as e2:
+                logger.error(f"Fallback identity verification failed: {e2}")
+                degraded = True
+                degraded_reasons.append("identity_verification_timeout")
 
         # 5. Risk Fusion
         score, level, confidence, reasons, action, should_block, should_report = self.fusion_engine.fuse(
@@ -183,7 +209,9 @@ class AnalysisOrchestrator:
             sender=request.sender_id,
             model_version="1.0.0",
             degraded=degraded,
-            degraded_reason=",".join(degraded_reasons) if degraded_reasons else None
+            degraded_reason=",".join(degraded_reasons) if degraded_reasons else None,
+            threat_intel=primary_threat_intel_info,
+            trai_identity=trai_info
         )
 
         # Persist analysis

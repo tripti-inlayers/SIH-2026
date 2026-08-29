@@ -5,7 +5,7 @@ import android.util.Log
 import com.sancharsaathi.app.data.remote.NetworkResult
 import com.sancharsaathi.app.di.AppModule
 import com.sancharsaathi.app.domain.model.RiskLevel
-import com.sancharsaathi.app.notification.NotificationHelper
+import com.sancharsaathi.app.receiver.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,7 +42,7 @@ object SmsCaptureManager {
                         Log.i(TAG, "Live SMS analysis completed: level=${riskResult.riskLevel}, score=${riskResult.riskScore}")
                         AppModule.historyStore.add(riskResult)
                         if (riskResult.riskLevel == RiskLevel.HIGH || riskResult.riskLevel == RiskLevel.SUSPICIOUS) {
-                            NotificationHelper.showThreatNotification(context, riskResult)
+                            NotificationHelper.showNotification(context, riskResult)
                         }
                     }
                     is NetworkResult.Failure -> {
