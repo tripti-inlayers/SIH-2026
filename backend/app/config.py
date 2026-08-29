@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     URL_CACHE_TTL_SECONDS: int = 3600
     THREAT_INTEL_PROVIDER: str = "multi"
     GOOGLE_SAFE_BROWSING_API_KEY: Optional[str] = None
+    GOOGLE_WEBRISK_API_KEY: Optional[str] = None
     PHISHTANK_API_KEY: Optional[str] = None
     IDENTITY_PROVIDER: str = "mock"
     REPORTING_PROVIDER: str = "mock"

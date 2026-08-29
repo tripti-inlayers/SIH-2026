@@ -1,8 +1,46 @@
 import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
 from app.services.threat_intel.google_safebrowsing import GoogleSafeBrowsingProvider
+from app.services.threat_intel.google_webrisk import GoogleWebRiskProvider
 from app.services.threat_intel.multi_provider import MultiThreatIntelProvider
 from app.services.threat_intel.base import ThreatIntelVerdict
+
+@pytest.mark.asyncio
+async def test_webrisk_missing_api_key():
+    provider = GoogleWebRiskProvider(api_key=None)
+    res = await provider.lookup("https://example.com")
+    assert res.verdict == ThreatIntelVerdict.UNKNOWN
+    assert "missing" in res.detail
+
+@pytest.mark.asyncio
+async def test_webrisk_no_match():
+    provider = GoogleWebRiskProvider(api_key="test_key")
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {}
+        mock_get.return_value = mock_resp
+
+        res = await provider.lookup("https://www.google.com")
+        assert res.verdict == ThreatIntelVerdict.UNKNOWN
+        assert "no threat match" in res.detail
+
+@pytest.mark.asyncio
+async def test_webrisk_malicious_match():
+    provider = GoogleWebRiskProvider(api_key="test_key")
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "threat": {
+                "threatTypes": ["SOCIAL_ENGINEERING"]
+            }
+        }
+        mock_get.return_value = mock_resp
+
+        res = await provider.lookup("http://phishing.example.com")
+        assert res.verdict == ThreatIntelVerdict.KNOWN_MALICIOUS
+        assert "SOCIAL_ENGINEERING" in res.detail
 
 @pytest.mark.asyncio
 async def test_safebrowsing_missing_api_key():
@@ -17,7 +55,7 @@ async def test_safebrowsing_no_match():
     with patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
         mock_resp = MagicMock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {}  # Safe Browsing returns empty dict when clean
+        mock_resp.json.return_value = {}
         mock_post.return_value = mock_resp
 
         res = await provider.lookup("https://www.google.com")

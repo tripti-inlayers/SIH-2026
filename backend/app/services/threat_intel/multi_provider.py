@@ -3,6 +3,7 @@ import time
 from typing import Dict, Tuple
 from app.services.threat_intel.base import ThreatIntelProvider, ThreatIntelResult, ThreatIntelVerdict
 from app.services.threat_intel.google_safebrowsing import GoogleSafeBrowsingProvider
+from app.services.threat_intel.google_webrisk import GoogleWebRiskProvider
 from app.services.threat_intel.phishtank import PhishTankProvider
 from app.services.threat_intel.mock_provider import MockThreatIntelProvider
 from app.config import settings
@@ -13,12 +14,13 @@ _threat_intel_cache: Dict[str, Tuple[ThreatIntelResult, float]] = {}
 
 class MultiThreatIntelProvider:
     """
-    Executes multiple Threat Intelligence providers concurrently (Google Safe Browsing v4, PhishTank, Mock)
+    Executes multiple Threat Intelligence providers concurrently (Google Safe Browsing v4, Google Web Risk, PhishTank, Mock)
     with hard timeouts, in-memory TTL caching, and graceful fallbacks.
     """
 
     def __init__(self):
         self.safebrowsing_provider = GoogleSafeBrowsingProvider()
+        self.webrisk_provider = GoogleWebRiskProvider()
         self.phishtank_provider = PhishTankProvider()
         self.mock_provider = MockThreatIntelProvider()
 
@@ -41,6 +43,7 @@ class MultiThreatIntelProvider:
         # Run providers concurrently
         tasks = [
             self.safebrowsing_provider.lookup(url),
+            self.webrisk_provider.lookup(url),
             self.phishtank_provider.lookup(url),
             self.mock_provider.lookup(url)
         ]
