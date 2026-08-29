@@ -17,7 +17,7 @@ class RiskFusionEngine:
         Fuses all computed signals into a final risk evaluation tuple:
         (risk_score, risk_level, confidence, reasons, recommended_action, should_block, should_report)
         """
-        # 1. PhishDestroy / URL Threat Intelligence contribution (max 60 points)
+        # 1. PhishDestroy / Threat Intelligence contribution (max 60 points)
         if phishdestroy_score > 0:
             pd_risk_score = phishdestroy_score
         else:
@@ -54,41 +54,42 @@ class RiskFusionEngine:
         local_weights_sum = sum(s.weight for s in signals if s.category == "message" and s.triggered)
         local_rule_contribution = min(10.0, local_weights_sum * 12.5)
 
-        # 4. General URL Heuristics contribution (max 5 points)
+        # 4. General URL Heuristics contribution (max 25 points)
         url_heuristics_sum = sum(s.weight for s in signals if s.category == "url" and s.triggered)
-        url_heuristic_contribution = min(5.0, url_heuristics_sum * 5.2)
+        url_heuristic_contribution = min(25.0, url_heuristics_sum * 30.0)
 
-        # Fused raw score
+        # Determine threat intelligence status
         is_threat = phishdestroy_threat
         if not is_threat:
             for s in signals:
                 if s.category == "threat_intel" and s.triggered and s.code in (
-                    "WEBRISK_MALWARE", "WEBRISK_PHISHING", "WEBRISK_UNWANTED_SOFTWARE", "REPUTATION_MALICIOUS"
+                    "WEBRISK_MALWARE", "WEBRISK_PHISHING", "WEBRISK_UNWANTED_SOFTWARE", "REPUTATION_MALICIOUS", "WEBRISK_SOCIAL_ENGINEERING"
                 ):
                     is_threat = True
                     break
 
+        # Calculate final fused score
         if not is_threat:
-            # Scale other components to a 100-point scale
             raw_sum = model_contribution + local_rule_contribution + url_heuristic_contribution
-            final_score = raw_sum * 2.5
+            
+            has_message_triggers = any(s.category == "message" and s.triggered for s in signals)
+            if has_url and not has_message_triggers and spam_prob < 0.10:
+                # Standalone URL analysis: URL heuristics scale directly to score
+                final_score = url_heuristic_contribution * 3.2
+            else:
+                final_score = raw_sum * 2.5
         else:
             final_score = pd_contribution + model_contribution + local_rule_contribution + url_heuristic_contribution
 
         risk_score = min(100, max(0, int(round(final_score))))
 
-        # Apply Confirmed Threat Floor:
-        is_threat = phishdestroy_threat
-        if not is_threat:
-            for s in signals:
-                if s.category == "threat_intel" and s.triggered and s.code in (
-                    "WEBRISK_MALWARE", "WEBRISK_PHISHING", "WEBRISK_UNWANTED_SOFTWARE", "REPUTATION_MALICIOUS"
-                ):
-                    is_threat = True
-                    break
-
+        # Apply Confirmed Threat Floor
         if is_threat and pd_risk_score >= 70:
-            risk_score = max(risk_score, 80)
+            risk_score = max(risk_score, 90)
+        elif is_threat:
+            for s in signals:
+                if s.category == "threat_intel" and s.triggered and s.code.startswith("WEBRISK_"):
+                    risk_score = max(risk_score, int(round(s.weight * 100)))
 
         # Map to RiskLevel
         if risk_score <= settings.RISK_THRESHOLD_LOW_MAX:
@@ -106,7 +107,7 @@ class RiskFusionEngine:
             confidence = max(0.30, confidence - 0.20)
         confidence = round(confidence, 2)
 
-        # Extract reasons
+        # Extract top reasons
         triggered_signals = [s for s in signals if s.triggered]
         triggered_signals.sort(key=lambda s: s.weight, reverse=True)
         reasons = [s.description for s in triggered_signals[:4]]

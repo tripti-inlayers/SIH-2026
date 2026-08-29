@@ -5,8 +5,19 @@ from app.schemas.common import RiskSignal
 from app.core.security import sanitize_url
 
 SHORTENER_DOMAINS = {"bit.ly", "tinyurl.com", "t.co", "is.gd", "buff.ly", "ow.ly", "goo.gl"}
-SUSPICIOUS_TLDS = {".tk", ".top", ".xyz", ".gq", ".ml", ".cf", ".ga", ".work", ".click"}
-TARGET_BRANDS = ["sbi", "bankofindia", "statebankofindia", "hdfcbank", "icicibank", "axisbank", "indiapost", "irctc", "airtel", "jio"]
+SUSPICIOUS_TLDS = {".tk", ".top", ".xyz", ".gq", ".ml", ".cf", ".ga", ".work", ".click", ".shop", ".site", ".online", ".info"}
+
+TARGET_BRANDS = [
+    "amazon", "amazn", "google", "googl", "g-security", "paytm", "sbi", "statebank", "bankofindia",
+    "statebankofindia", "hdfc", "hdfcbank", "icici", "icicibank", "axis", "axisbank", "airtel", "jio", 
+    "indiapost", "irctc", "flipkart", "phonepe", "gpay", "paypal", "microsoft", "apple", "netflix", 
+    "bank", "gov", "uidai", "aadhaar", "incometax"
+]
+
+SECURITY_INTENT_KEYWORDS = {
+    "login", "verify", "auth", "security", "account", "update", "signin", "billing", 
+    "credential", "support", "service", "confirm", "kyc", "alert", "portal"
+}
 
 def levenshtein_distance(s1: str, s2: str) -> int:
     if len(s1) < len(s2):
@@ -52,18 +63,18 @@ class UrlAnalysisService:
             code="IP_ADDRESS_HOST",
             description="The link points directly to an IP address instead of a domain name.",
             technical_detail=f"Host resolved as raw IP: {host}",
-            weight=0.15,
+            weight=0.25,
             triggered=is_ip
         ))
 
-        # 2. Non-HTTPS
+        # 2. Non-HTTPS (Insecure HTTP is a MINOR transport signal)
         is_http = parsed.scheme.lower() == "http"
         signals.append(RiskSignal(
             category="url",
             code="NON_HTTPS",
             description="The link uses insecure HTTP instead of encrypted HTTPS.",
             technical_detail=f"Scheme used: {parsed.scheme}",
-            weight=0.08,
+            weight=0.05,  # Reduced so HTTP alone never forces high scores
             triggered=is_http
         ))
 
@@ -96,22 +107,23 @@ class UrlAnalysisService:
         signals.append(RiskSignal(
             category="url",
             code="SUSPICIOUS_TLD",
-            description="The link uses a top-level domain frequently associated with spam or scams.",
+            description="The link uses a top-level domain frequently associated with scam volume.",
             technical_detail=f"TLD: {tld}",
-            weight=0.07,
+            weight=0.10,
             triggered=is_suspicious_tld
         ))
 
-        # 6. Suspicious Characters
+        # 6. Suspicious Characters / Hyphen Abuse
         has_at = "@" in raw_url
         has_punycode = "xn--" in host
-        excessive_hyphens = host.count("-") > 2
+        hyphen_count = host.count("-")
+        excessive_hyphens = hyphen_count >= 2
         suspicious_chars = has_at or has_punycode or excessive_hyphens
         signals.append(RiskSignal(
             category="url",
             code="SUSPICIOUS_CHARACTERS",
-            description="The link contains obfuscated or suspicious character structures.",
-            technical_detail=f"at_symbol={has_at}, punycode={has_punycode}, hyphens={host.count('-')}",
+            description="The link domain uses excessive hyphens or obfuscated characters.",
+            technical_detail=f"at_symbol={has_at}, punycode={has_punycode}, hyphens={hyphen_count}",
             weight=0.08,
             triggered=suspicious_chars
         ))
@@ -127,19 +139,42 @@ class UrlAnalysisService:
             triggered=is_long
         ))
 
-        # 8. Domain Lookalike (Levenshtein check on sub-tokens)
+        # 8. Domain Tokens & Security Keyword Heuristics
         host_tokens = re.split(r"[\.\-_]", host)
+        matched_security_keywords = [tok for tok in host_tokens if tok in SECURITY_INTENT_KEYWORDS]
+        
+        has_security_keyword = len(matched_security_keywords) > 0
+        signals.append(RiskSignal(
+            category="url",
+            code="SECURITY_INTENT_KEYWORD",
+            description=f"The domain name contains security/login intent keywords ({', '.join(matched_security_keywords)}).",
+            technical_detail=f"Host '{host}' contains keywords: {matched_security_keywords}",
+            weight=0.15,
+            triggered=has_security_keyword
+        ))
+
+        # 9. Domain Lookalike & Brand Typosquatting
         is_lookalike = False
         matched_brand = ""
+        
+        # Check sub-tokens against brand registry
         for token in host_tokens:
             if not token or len(token) < 3:
                 continue
             normalized_token = token.replace("0", "o").replace("1", "i").replace("3", "e").replace("5", "s")
+            
             for brand in TARGET_BRANDS:
-                if token == brand:
-                    continue  # exact match on official brand token
+                if token == brand or normalized_token == brand:
+                    if host.endswith(f".{brand}.com") or host == f"{brand}.com" or host.endswith(".gov.in"):
+                        continue
+                    is_lookalike = True
+                    matched_brand = brand
+                    break
+                
                 dist = levenshtein_distance(normalized_token, brand)
                 if dist <= 2 and abs(len(normalized_token) - len(brand)) <= 2:
+                    if host.endswith(f".{brand}.com") or host == f"{brand}.com":
+                        continue
                     is_lookalike = True
                     matched_brand = brand
                     break
@@ -149,10 +184,21 @@ class UrlAnalysisService:
         signals.append(RiskSignal(
             category="url",
             code="DOMAIN_LOOKALIKE",
-            description=f"The domain closely mimics a legitimate brand name ({matched_brand or 'known brand'}).",
-            technical_detail=f"Host '{host}' token matched brand '{matched_brand}'",
-            weight=0.15,
+            description=f"The domain closely mimics a known brand or institution ({matched_brand or 'popular brand'}).",
+            technical_detail=f"Host '{host}' token matched brand target '{matched_brand}'",
+            weight=0.20,
             triggered=is_lookalike
+        ))
+
+        # 10. Brand + Security Keyword Combination (High Risk Impersonation Pattern)
+        is_brand_security_combo = is_lookalike and has_security_keyword
+        signals.append(RiskSignal(
+            category="url",
+            code="BRAND_SECURITY_IMPERSONATION",
+            description="The domain combines brand lookalikes with security/login verification keywords.",
+            technical_detail=f"Brand '{matched_brand}' combined with security keywords {matched_security_keywords} in host '{host}'",
+            weight=0.20,
+            triggered=is_brand_security_combo
         ))
 
         return signals

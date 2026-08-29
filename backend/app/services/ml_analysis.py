@@ -8,6 +8,18 @@ class MlAnalysisService:
     async def analyze(self, text: str) -> Optional[RiskSignal]:
         if not text or not text.strip():
             return None
+        
+        cleaned = text.strip()
+        # If input is a raw bare URL without message text, skip text sequence classification
+        if cleaned.startswith(("http://", "https://")) and " " not in cleaned:
+            return RiskSignal(
+                category="ml_model",
+                code="AI_NORMAL",
+                description="AI model found no spam indicators in raw link text.",
+                technical_detail="RoBERTa text classifier bypassed for raw URL input (handled by Threat Intel & URL Heuristics).",
+                weight=0.0,
+                triggered=False
+            )
             
         try:
             async with httpx.AsyncClient() as client:

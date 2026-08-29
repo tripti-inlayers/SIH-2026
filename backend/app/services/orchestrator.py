@@ -220,11 +220,12 @@ class AnalysisOrchestrator:
                 primary_threat_intel_info.verdict = "UNAVAILABLE"
 
         # 4. Identity Verification Signals
+        trai_info = None
         try:
             id_task = asyncio.create_task(
-                self.identity_provider.verify(request.sender_id, request.claimed_organization, urls)
+                self.identity_provider.verify_full(request.sender_id, request.claimed_organization, urls)
             )
-            id_signals = await asyncio.wait_for(id_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
+            id_signals, trai_info = await asyncio.wait_for(id_task, timeout=settings.REQUEST_TIMEOUT_SECONDS)
             all_signals.extend(id_signals)
         except Exception as e:
             logger.error(f"Identity verification failed or timed out: {e}")
@@ -269,7 +270,8 @@ class AnalysisOrchestrator:
             model_version="1.0.0",
             degraded=degraded,
             degraded_reason=",".join(degraded_reasons) if degraded_reasons else None,
-            threat_intel=primary_threat_intel_info
+            threat_intel=primary_threat_intel_info,
+            trai_identity=trai_info
         )
 
         # Persist analysis

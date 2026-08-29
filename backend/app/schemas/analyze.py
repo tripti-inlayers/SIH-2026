@@ -25,6 +25,21 @@ class AnalyzeRequest(BaseModel):
     timestamp_epoch_millis: int
     source: CaptureSource
 
+class TraiIdentityInfo(BaseModel):
+    checked: bool = False
+    verified: bool = False
+    is_dlt_header: bool = False
+    header: Optional[str] = None
+    normalized_header: Optional[str] = None
+    entity_name: Optional[str] = None
+    brand_name: Optional[str] = None
+    category: Optional[str] = None
+    purpose: Optional[str] = None
+    source: str = "TRAI Header Information Portal"
+    status_label: str = "Unverified Sender"
+    lookalike_warning: bool = False
+    error: Optional[str] = None
+
 class RiskResultResponse(BaseModel):
     analysis_id: str
     risk_score: int = Field(..., ge=0, le=100)
@@ -41,6 +56,7 @@ class RiskResultResponse(BaseModel):
     degraded: bool = False
     degraded_reason: Optional[str] = None
     threat_intel: Optional[ThreatIntelInfo] = None
+    trai_identity: Optional[TraiIdentityInfo] = None
 
 class UrlAnalyzeRequest(BaseModel):
     url: str

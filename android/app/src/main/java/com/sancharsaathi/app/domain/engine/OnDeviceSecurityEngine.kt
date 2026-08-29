@@ -327,21 +327,35 @@ object OnDeviceSecurityEngine {
             }
 
             // E. Lookalike Domain & Hyphen Abuse
-            val isLookalike = listOf("sbi", "hdfc", "icici", "paytm", "kyc", "incometax", "aadhaar", "uidai", "gov", "nic").any { keyword ->
+            val targetBrands = listOf("amazon", "amazn", "google", "googl", "g-security", "sbi", "hdfc", "icici", "paytm", "kyc", "incometax", "aadhaar", "uidai", "gov", "nic")
+            val isLookalike = targetBrands.any { keyword ->
                 host.contains(keyword) && !host.endsWith(".gov.in") && !host.endsWith(".nic.in") && !host.equals("$keyword.com") && !host.equals("$keyword.co.in")
             }
             if (isLookalike) {
                 signals.add(RiskSignal(
                     category = "url",
                     code = "DOMAIN_LOOKALIKE",
-                    description = "The link domain mimics a legitimate institution or government service ($host).",
+                    description = "The link domain mimics a legitimate institution or service ($host).",
                     technicalDetail = "Lookalike brand keyword detected in unverified domain.",
-                    weight = 0.40,
+                    weight = 0.35,
                     triggered = true
                 ))
             }
 
-            // F. Excessive Hyphens or Subdomains
+            // F. Security Intent Keywords in Host
+            val securityKeywords = listOf("login", "verify", "auth", "security", "account", "update", "signin", "billing")
+            if (securityKeywords.any { host.contains(it) }) {
+                signals.add(RiskSignal(
+                    category = "url",
+                    code = "SECURITY_INTENT_KEYWORD",
+                    description = "The domain name contains security/login verification keywords.",
+                    technicalDetail = "Host '$host' contains sensitive security intent tokens.",
+                    weight = 0.20,
+                    triggered = true
+                ))
+            }
+
+            // G. Excessive Hyphens or Subdomains
             if (host.count { it == '-' } >= 2 || host.count { it == '.' } >= 3) {
                 signals.add(RiskSignal(
                     category = "url",
