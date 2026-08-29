@@ -10,10 +10,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.RiskSignal
 
 @Composable
@@ -40,13 +42,13 @@ fun TechnicalDetailsSection(
                     .clickable { expanded = !expanded }
             ) {
                 Text(
-                    text = "View technical details",
+                    text = stringResource(id = R.string.view_tech_details),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Collapse details" else "Expand details"
+                    contentDescription = if (expanded) stringResource(id = R.string.collapse_details) else stringResource(id = R.string.expand_details)
                 )
             }
 

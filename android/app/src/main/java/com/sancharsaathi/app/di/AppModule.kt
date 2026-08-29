@@ -47,6 +47,7 @@ object AppModule {
     val historyStore by lazy { HistoryStore(if (::appContext.isInitialized) appContext else null) }
     val smsInboxReader by lazy { SmsInboxReader(appContext, historyStore) }
     val networkConfigStore by lazy { NetworkConfigStore(appContext) }
+    val languageConfigStore by lazy { com.sancharsaathi.app.data.local.LanguageConfigStore(appContext) }
     val demoContentSource by lazy { DemoContentSource() }
 
     private val okHttpClient by lazy {
@@ -96,5 +97,6 @@ object AppModule {
     fun initialize(context: Context) {
         appContext = context.applicationContext
         historyStore.setContext(appContext)
+        languageConfigStore.applyLocale(languageConfigStore.currentLanguage)
     }
 }

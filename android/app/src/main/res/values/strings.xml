@@ -1,3 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PhishGuard</string>
+
+    <!-- Navigation & Common -->
+    <string name="back">Go Back</string>
+    <string name="back_safe">Go Back (Safe)</string>
+    <string name="continue_action">Continue</string>
+    <string name="continue_anyway">Continue Anyway</string>
+    <string name="continue_with_caution">Continue with caution</string>
+    <string name="retry">Retry</string>
+    <string name="done">Done</string>
+    <string name="close">Close</string>
+    <string name="understood">Understood</string>
+    <string name="verify">Verify</string>
+    <string name="report">Report</string>
+    <string name="report_threat">Report Threat</string>
+    <string name="see_all">See All</string>
+    <string name="history">History</string>
+    <string name="settings">Settings</string>
+    <string name="settings_title">Settings &amp; Configuration</string>
+    <string name="view_details">View Details</string>
+    <string name="hide_details">Hide Details</string>
+    <string name="view_tech_details">View technical details</string>
+    <string name="expand_details">Expand details</string>
+    <string name="collapse_details">Collapse details</string>
+
+    <!-- Risk Levels & Badges -->
+    <string name="risk_low">Low Risk</string>
+    <string name="risk_suspicious">Suspicious</string>
+    <string name="risk_high">High Risk</string>
+    <string name="analyzing_badge">Analyzing...</string>
+    <string name="analysis_unavailable_badge">Analysis Unavailable</string>
+    <string name="risk_score_format">Risk Score: %1$d/100</string>
+    <string name="risk_score_label">Risk Score:</string>
+
+    <!-- Risk Verdicts -->
+    <string name="verdict_low">Looks okay.</string>
+    <string name="verdict_suspicious">Looks suspicious. Verify before you act.</string>
+    <string name="verdict_high">Don\'t open this link.</string>
+    <string name="msg_safe_low">This message appears to be low risk</string>
+    <string name="msg_suspicious">This message appears to be suspicious</string>
+    <string name="dangerous_link">Dangerous link</string>
+    <string name="dangerous_link_blocked">DANGEROUS LINK BLOCKED</string>
+
+    <!-- Home Screen -->
+    <string name="protection_active">Protection Active</string>
+    <string name="protection_active_desc">Supported incoming messages are checked automatically.</string>
+    <string name="analyze_message_or_link">Analyze Message or Link</string>
+    <string name="paste_instruction">Paste a suspicious message or link below</string>
+    <string name="paste_placeholder">Paste SMS, WhatsApp message, email, or URL here...</string>
+    <string name="analyze">Analyze</string>
+    <string name="recent_detections">Recent Message Detections</string>
+    <string name="empty_recent_detections">No messages detected yet. Incoming SMS will appear here automatically.</string>
+    <string name="refresh_feed">Refresh SMS feed</string>
+
+    <!-- Settings Screen -->
+    <string name="language_section">Language</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="backend_settings">Backend Connection Settings</string>
+    <string name="current_base_url">Current Base URL: %1$s</string>
+    <string name="active_base_url">Active Base URL: %1$s</string>
+    <string name="connection_mode">Connection Mode:</string>
+    <string name="usb_mode">USB / ADB Mode</string>
+    <string name="usb_mode_desc">Uses http://127.0.0.1:8000/ (Requires `adb reverse tcp:8000 tcp:8000`)</string>
+    <string name="wifi_mode">Wi-Fi Mode</string>
+    <string name="wifi_mode_desc">Connects directly to laptop LAN IP across local Wi-Fi</string>
+    <string name="laptop_host">Laptop Host / IP</string>
+    <string name="fastapi_port">FastAPI Port</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="testing_connection">Testing...</string>
+    <string name="sms_contacts_permissions">SMS &amp; Contacts Permissions</string>
+    <string name="sms_contacts_scanning">SMS &amp; Contacts Scanning</string>
+    <string name="granted">Granted</string>
+    <string name="not_granted">Not Granted</string>
+    <string name="request_permissions_button">Request SMS &amp; Contact Permissions</string>
+    <string name="permissions_desc">Used to scan SMS messages for scams and resolve sender phone numbers to contact names. Local pattern classification runs offline instantly.</string>
+    <string name="link_protection">Link Protection</string>
+    <string name="web_link_security_gate">Web Link Security Gate</string>
+    <string name="active">Active</string>
+    <string name="link_gate_desc">PhishGuard can check web links before opening them to block phishing sites, scam links, and dangerous malware redirects.</string>
+    <string name="set_as_link_handler">Set as link handler in System Settings</string>
+    <string name="about_app">About PhishGuard</string>
+    <string name="app_version">App Version: %1$s (%2$d)</string>
+
+    <!-- Result & Technical Details -->
+    <string name="analysis_result">Analysis Result</string>
+    <string name="key_reasons_identified">Key Reasons Identified</string>
+    <string name="detected_target_url">Detected Target URL</string>
+    <string name="threat_intel_header">Threat Intelligence / PhishDestroy</string>
+    <string name="reasons_label">Reasons:</string>
+    <string name="verification_unavailable_warning">Verification unavailable — proceed with caution.</string>
+    <string name="not_completely_safe_warning">This does not guarantee the message is completely safe</string>
+
+    <!-- Blocked & Link Gate Screen -->
+    <string name="security_alert">Security Alert</string>
+    <string name="link_blocked">Link Blocked</string>
+    <string name="link_blocked_desc">This link appears unsafe, so we stopped it before it opened.</string>
+    <string name="blocked_target_link">Blocked Target Link</string>
+    <string name="risk_indicators_triggered">Risk Indicators Triggered</string>
+    <string name="checking_link_security">Checking link security...</string>
+    <string name="link_gate_title">PhishGuard Link Gate</string>
+    <string name="high_risk_gate_desc">This link was identified as malicious or a high-risk phishing threat.</string>
+    <string name="suspicious_gate_title">SUSPICIOUS LINK WARNING</string>
+    <string name="suspicious_gate_desc">Exercise caution. This link contains suspicious characteristics or unverified domain patterns.</string>
+    <string name="low_risk_gate_title">LINK APPEARS LOW RISK</string>
+    <string name="low_risk_gate_desc">No malicious indicators or threat listings were detected for this link.</string>
+    <string name="continue_to_webpage">CONTINUE TO WEBPAGE</string>
+    <string name="sec_check_unavailable">SECURITY CHECK UNAVAILABLE</string>
+    <string name="sec_check_unavailable_desc">Could not verify link security at this time (%1$s). Automated opening has been blocked for safety.</string>
+    <string name="unsupported_scheme">UNSUPPORTED OR UNTRUSTED SCHEME</string>
+    <string name="unsupported_scheme_desc">PhishGuard Link Gate only inspects standard web URLs (http/https). Scheme \'%1$s\' was blocked.</string>
+    <string name="no_browser_available">NO EXTERNAL BROWSER AVAILABLE</string>
+    <string name="no_browser_available_desc">PhishGuard inspected this link, but no separate web browser (such as Chrome or Samsung Internet) was found on the device to open it.</string>
+    <string name="suspicious_link">Suspicious Link</string>
+
+    <!-- History Screen -->
+    <string name="analysis_history">Analysis History</string>
+    <string name="no_messages_checked">No messages checked yet.</string>
+
+    <!-- Report Confirmation -->
+    <string name="report_submitted">Report Submitted</string>
+    <string name="threat_reported">Threat reported.</string>
+    <string name="report_id_format">Report ID: %1$s</string>
+    <string name="threat_type_format">Threat Type: %1$s</string>
+
+    <!-- Analyzing Screen & Steps -->
+    <string name="full_analysis_unavailable">Full security analysis is currently unavailable.</string>
+    <string name="continue_without_analysis">Continue without full analysis</string>
+    <string name="step_checking_msg">Checking this message...</string>
+    <string name="step_analyzing_msg">Analyzing message</string>
+    <string name="step_checking_link">Checking link</string>
+    <string name="step_verifying_sender">Verifying sender</string>
+
+    <!-- Verification Sheet -->
+    <string name="verification_guide_title">Independent Verification Guide</string>
+    <string name="verification_guide_text">1. Do not use phone numbers or links included in the message.\n2. Visit the official website directly by typing its web address.\n3. Call official customer support numbers listed on verified portals (e.g. Sanchar Saathi / Chakshu portal).</string>
+
+    <!-- Notifications -->
+    <string name="notif_phishing_blocked">⚠️ Phishing Attack Blocked</string>
+    <string name="notif_suspicious_detected">🧐 Suspicious Message Detected</string>
+    <string name="notif_safe_received">✓ Safe Message Received</string>
+    <string name="notif_body_format">From: %1$s\nReason: %2$s</string>
+    <string name="notif_text_format">From %1$s: Click to inspect.</string>
+
+    <!-- Permission Rationale -->
+    <string name="perm_rationale_title">SMS &amp; Contacts Protection Permissions</string>
+    <string name="perm_rationale_desc">PhishGuard uses SMS and Contact permissions to scan incoming messages for phishing links and display sender names accurately. Granting this permission is optional — Demo Mode and Share-to-App will continue to work regardless.</string>
+    <string name="perm_rationale_confirm">Continue to Permission Prompt</string>
+    <string name="perm_rationale_skip">Skip for Now</string>
 </resources>

@@ -74,13 +74,13 @@ fun HomeScreen(
                 },
                 actions = {
                     IconButton(onClick = { viewModel.refreshInbox() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh SMS feed")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(id = R.string.refresh_feed))
                     }
                     IconButton(onClick = onNavigateToHistory) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Icon(Icons.Default.History, contentDescription = stringResource(id = R.string.history))
                     }
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(id = R.string.settings))
                     }
                 }
             )
@@ -116,14 +116,14 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(16.dp))
                         Column {
                             Text(
-                                text = "Protection Active",
+                                text = stringResource(id = R.string.protection_active),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = RiskColors.lowText,
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Supported incoming messages are checked automatically.",
+                                text = stringResource(id = R.string.protection_active_desc),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -136,7 +136,7 @@ fun HomeScreen(
             // 2. Manual Analysis Input Card
             item {
                 Text(
-                    text = "Analyze Message or Link",
+                    text = stringResource(id = R.string.analyze_message_or_link),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -156,7 +156,7 @@ fun HomeScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Paste a suspicious message or link below",
+                                text = stringResource(id = R.string.paste_instruction),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -165,14 +165,14 @@ fun HomeScreen(
                         OutlinedTextField(
                             value = manualInputText,
                             onValueChange = { manualInputText = it },
-                            placeholder = { Text("Paste SMS, WhatsApp message, email, or URL here...") },
+                            placeholder = { Text(stringResource(id = R.string.paste_placeholder)) },
                             minLines = 3,
                             maxLines = 5,
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         PrimaryButton(
-                            text = "Analyze",
+                            text = stringResource(id = R.string.analyze),
                             onClick = {
                                 if (manualInputText.isNotBlank()) {
                                     val req = viewModel.createManualAnalysisRequest(manualInputText)
@@ -195,12 +195,12 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Recent Message Detections",
+                        text = stringResource(id = R.string.recent_detections),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     TextButton(onClick = onNavigateToHistory) {
-                        Text("See All")
+                        Text(stringResource(id = R.string.see_all))
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -217,7 +217,7 @@ fun HomeScreen(
                     val list = (uiState as HomeUiState.Success).recentAnalyses
                     if (list.isEmpty()) {
                         item {
-                            EmptyState(message = "No messages detected yet. Incoming SMS will appear here automatically.")
+                            EmptyState(message = stringResource(id = R.string.empty_recent_detections))
                         }
                     } else {
                         items(list) { item ->

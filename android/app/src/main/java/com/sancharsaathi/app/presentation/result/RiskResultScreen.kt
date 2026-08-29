@@ -1,20 +1,22 @@
 package com.sancharsaathi.app.presentation.result
 
+import android.content.Intent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.RiskLevel
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.*
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.OpenInNew
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +37,7 @@ fun RiskResultScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Analysis Result", onBackClick = onNavigateBack)
+            AppTopBar(title = stringResource(id = R.string.analysis_result), onBackClick = onNavigateBack)
         }
     ) { padding ->
         Box(
@@ -71,19 +73,17 @@ fun RiskResultScreen(
         ModalBottomSheet(onDismissRequest = { showVerifySheet = false }) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
-                    text = "Independent Verification Guide",
+                    text = stringResource(id = R.string.verification_guide_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "1. Do not use phone numbers or links included in the message.\n" +
-                           "2. Visit the official website directly by typing its web address.\n" +
-                           "3. Call official customer support numbers listed on verified portals (e.g. Sanchar Saathi / Chakshu portal).",
+                    text = stringResource(id = R.string.verification_guide_text),
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Spacer(modifier = Modifier.height(24.dp))
-                PrimaryButton(text = "Understood", onClick = { showVerifySheet = false })
+                PrimaryButton(text = stringResource(id = R.string.understood), onClick = { showVerifySheet = false })
             }
         }
     }
@@ -109,9 +109,9 @@ fun ResultContent(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 val verdictText = when (result.riskLevel) {
-                    RiskLevel.LOW -> "Looks okay."
-                    RiskLevel.SUSPICIOUS -> "Looks suspicious. Verify before you act."
-                    RiskLevel.HIGH -> "Don't open this link."
+                    RiskLevel.LOW -> stringResource(id = R.string.verdict_low)
+                    RiskLevel.SUSPICIOUS -> stringResource(id = R.string.verdict_suspicious)
+                    RiskLevel.HIGH -> stringResource(id = R.string.verdict_high)
                 }
                 Text(
                     text = verdictText,
@@ -128,7 +128,7 @@ fun ResultContent(
                 if (result.degraded) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Verification unavailable — proceed with caution.",
+                        text = stringResource(id = R.string.verification_unavailable_warning),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -139,7 +139,7 @@ fun ResultContent(
 
         item {
             Text(
-                text = "Key Reasons Identified",
+                text = stringResource(id = R.string.key_reasons_identified),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -154,7 +154,7 @@ fun ResultContent(
             item {
                 val context = LocalContext.current
                 Text(
-                    text = "Detected Target URL",
+                    text = stringResource(id = R.string.detected_target_url),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -204,7 +204,7 @@ fun ResultContent(
                     ) {
                         Column(modifier = Modifier.padding(14.dp)) {
                             Text(
-                                text = "Threat Intelligence / PhishDestroy",
+                                text = stringResource(id = R.string.threat_intel_header),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (ti.threat) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface
@@ -250,26 +250,26 @@ fun ResultContent(
         item {
             when (result.riskLevel) {
                 RiskLevel.LOW -> {
-                    SecondaryButton(text = "Go Back", onClick = onNavigateBack)
+                    SecondaryButton(text = stringResource(id = R.string.back), onClick = onNavigateBack)
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "This does not guarantee the message is completely safe",
+                        text = stringResource(id = R.string.not_completely_safe_warning),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 RiskLevel.SUSPICIOUS -> {
-                    PrimaryButton(text = "Continue with caution", onClick = onNavigateBack)
+                    PrimaryButton(text = stringResource(id = R.string.continue_with_caution), onClick = onNavigateBack)
                     Spacer(modifier = Modifier.height(12.dp))
-                    SecondaryButton(text = "Verify", onClick = onVerifyClick)
+                    SecondaryButton(text = stringResource(id = R.string.verify), onClick = onVerifyClick)
                     Spacer(modifier = Modifier.height(12.dp))
-                    SecondaryButton(text = "Go Back", onClick = onNavigateBack)
+                    SecondaryButton(text = stringResource(id = R.string.back), onClick = onNavigateBack)
                 }
                 RiskLevel.HIGH -> {
-                    PrimaryButton(text = "Report", onClick = onNavigateToReport)
+                    PrimaryButton(text = stringResource(id = R.string.report), onClick = onNavigateToReport)
                     Spacer(modifier = Modifier.height(12.dp))
-                    SecondaryButton(text = "Go Back", onClick = onNavigateBack)
+                    SecondaryButton(text = stringResource(id = R.string.back), onClick = onNavigateBack)
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))

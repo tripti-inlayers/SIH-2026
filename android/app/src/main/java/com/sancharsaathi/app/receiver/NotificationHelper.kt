@@ -3,10 +3,14 @@ package com.sancharsaathi.app.receiver
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import com.sancharsaathi.app.R
+import com.sancharsaathi.app.di.AppModule
 import com.sancharsaathi.app.domain.model.RiskLevel
 import com.sancharsaathi.app.domain.model.RiskResult
+import java.util.Locale
 
 object NotificationHelper {
 
@@ -31,20 +35,31 @@ object NotificationHelper {
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Get localized Context based on user's language setting
+        val currentLang = AppModule.languageConfigStore.currentLanguage
+        val locale = Locale(currentLang.code)
+        val config = Configuration(context.resources.configuration).apply {
+            setLocale(locale)
+        }
+        val localizedContext = context.createConfigurationContext(config)
+
         val title = when (result.riskLevel) {
-            RiskLevel.HIGH -> "⚠️ Phishing Attack Blocked"
-            RiskLevel.SUSPICIOUS -> "🧐 Suspicious Message Detected"
-            else -> "✓ Safe Message Received"
+            RiskLevel.HIGH -> localizedContext.getString(R.string.notif_phishing_blocked)
+            RiskLevel.SUSPICIOUS -> localizedContext.getString(R.string.notif_suspicious_detected)
+            else -> localizedContext.getString(R.string.notif_safe_received)
         }
 
-        val body = "From: ${result.sender ?: "Unknown"}\nReason: ${result.reasons.firstOrNull() ?: "Standard SMS"}"
+        val senderStr = result.sender ?: "Unknown"
+        val reasonStr = result.reasons.firstOrNull() ?: "Standard SMS"
+        val body = localizedContext.getString(R.string.notif_body_format, senderStr, reasonStr)
+        val contentText = localizedContext.getString(R.string.notif_text_format, senderStr)
 
         val icon = android.R.drawable.ic_dialog_info
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(icon)
             .setContentTitle(title)
-            .setContentText("From ${result.sender}: Click to inspect.")
+            .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(
                 if (result.riskLevel == RiskLevel.HIGH) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT

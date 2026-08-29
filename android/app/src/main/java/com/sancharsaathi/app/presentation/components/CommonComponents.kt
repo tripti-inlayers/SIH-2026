@@ -7,7 +7,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,7 +24,7 @@ fun AppTopBar(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Go back"
+                        contentDescription = stringResource(id = R.string.back)
                     )
                 }
             }
@@ -63,6 +65,6 @@ fun ErrorState(
             color = MaterialTheme.colorScheme.error
         )
         Spacer(modifier = Modifier.height(16.dp))
-        PrimaryButton(text = "Retry", onClick = onRetry)
+        PrimaryButton(text = stringResource(id = R.string.retry), onClick = onRetry)
     }
 }

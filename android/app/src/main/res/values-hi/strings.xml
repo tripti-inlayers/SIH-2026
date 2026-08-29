@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhishGuard</string>
+
+    <!-- Navigation & Common -->
+    <string name="back">वापस जाएँ</string>
+    <string name="back_safe">वापस जाएँ (सुरक्षित)</string>
+    <string name="continue_action">जारी रखें</string>
+    <string name="continue_anyway">फिर भी जारी रखें</string>
+    <string name="continue_with_caution">सावधानी के साथ जारी रखें</string>
+    <string name="retry">पुनः प्रयास करें</string>
+    <string name="done">संपन्न</string>
+    <string name="close">बंद करें</string>
+    <string name="understood">समझ गया</string>
+    <string name="verify">सत्यापित करें</string>
+    <string name="report">रिपोर्ट करें</string>
+    <string name="report_threat">खतरे की रिपोर्ट करें</string>
+    <string name="see_all">सभी देखें</string>
+    <string name="history">इतिहास</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="settings_title">सेटिंग्स और कॉन्फ़िगरेशन</string>
+    <string name="view_details">विवरण देखें</string>
+    <string name="hide_details">विवरण छिपाएं</string>
+    <string name="view_tech_details">तकनीकी विवरण देखें</string>
+    <string name="expand_details">विवरण विस्तृत करें</string>
+    <string name="collapse_details">विवरण संक्षिप्त करें</string>
+
+    <!-- Risk Levels & Badges -->
+    <string name="risk_low">कम जोखिम</string>
+    <string name="risk_suspicious">संदिग्ध</string>
+    <string name="risk_high">उच्च जोखिम</string>
+    <string name="analyzing_badge">जाँच हो रही है...</string>
+    <string name="analysis_unavailable_badge">विश्लेषण उपलब्ध नहीं है</string>
+    <string name="risk_score_format">जोखिम स्कोर: %1$d/100</string>
+    <string name="risk_score_label">जोखिम स्कोर:</string>
+
+    <!-- Risk Verdicts -->
+    <string name="verdict_low">ठीक लग रहा है।</string>
+    <string name="verdict_suspicious">संदिग्ध लग रहा है। कदम उठाने से पहले सत्यापित करें।</string>
+    <string name="verdict_high">यह लिंक न खोलें।</string>
+    <string name="msg_safe_low">यह संदेश कम जोखिम वाला प्रतीत होता है</string>
+    <string name="msg_suspicious">यह संदेश संदिग्ध प्रतीत होता है</string>
+    <string name="dangerous_link">खतरनाक लिंक</string>
+    <string name="dangerous_link_blocked">खतरनाक लिंक ब्लॉक किया गया</string>
+
+    <!-- Home Screen -->
+    <string name="protection_active">सुरक्षा सक्रिय</string>
+    <string name="protection_active_desc">प्राप्त होने वाले संदेशों की स्वचालित रूप से जाँच की जाती है।</string>
+    <string name="analyze_message_or_link">संदेश या लिंक की जाँच करें</string>
+    <string name="paste_instruction">नीचे कोई संदिग्ध संदेश या लिंक पेस्ट करें</string>
+    <string name="paste_placeholder">यहाँ SMS, व्हाट्सएप संदेश, ईमेल या URL पेस्ट करें...</string>
+    <string name="analyze">जाँच करें</string>
+    <string name="recent_detections">हालिया संदेश जाँच</string>
+    <string name="empty_recent_detections">अभी तक कोई संदेश नहीं मिला। आने वाले SMS अपने आप यहाँ दिखाई देंगे।</string>
+    <string name="refresh_feed">SMS फीड रिफ्रेश करें</string>
+
+    <!-- Settings Screen -->
+    <string name="language_section">भाषा</string>
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="backend_settings">बैकएंड कनेक्शन सेटिंग्स</string>
+    <string name="current_base_url">वर्तमान बेस URL: %1$s</string>
+    <string name="active_base_url">सक्रिय बेस URL: %1$s</string>
+    <string name="connection_mode">कनेक्शन मोड:</string>
+    <string name="usb_mode">USB / ADB मोड</string>
+    <string name="usb_mode_desc">http://127.0.0.1:8000/ का उपयोग करता है (`adb reverse tcp:8000 tcp:8000` आवश्यक)</string>
+    <string name="wifi_mode">वाई-फाई मोड</string>
+    <string name="wifi_mode_desc">स्थानीय वाई-फाई पर लैपटॉप LAN IP से सीधे जुड़ता है</string>
+    <string name="laptop_host">लैपटॉप होस्ट / IP</string>
+    <string name="fastapi_port">FastAPI पोर्ट</string>
+    <string name="test_connection">कनेक्शन टेस्ट करें</string>
+    <string name="testing_connection">टेस्ट हो रहा है...</string>
+    <string name="sms_contacts_permissions">SMS और संपर्क अनुमतियाँ</string>
+    <string name="sms_contacts_scanning">SMS और संपर्क स्कैनिंग</string>
+    <string name="granted">अनुमति प्राप्त</string>
+    <string name="not_granted">अनुमति नहीं मिली</string>
+    <string name="request_permissions_button">SMS और संपर्क अनुमतियाँ मांगें</string>
+    <string name="permissions_desc">घोटालों के लिए SMS संदेशों को स्कैन करने और प्रेषक फोन नंबरों को संपर्क नामों में हल करने के लिए उपयोग किया जाता है। स्थानीय पैटर्न वर्गीकरण तुरंत ऑफ़लाइन चलता है।</string>
+    <string name="link_protection">लिंक सुरक्षा</string>
+    <string name="web_link_security_gate">वेब लिंक सुरक्षा गेट</string>
+    <string name="active">सक्रिय</string>
+    <string name="link_gate_desc">फ़िशिंग साइटों, घोटाले वाले लिंक और खतरनाक मैलवेयर रीडायरेक्ट को ब्लॉक करने के लिए PhishGuard वेब लिंक खोलने से पहले उनकी जाँच कर सकता है।</string>
+    <string name="set_as_link_handler">सिस्टम सेटिंग्स में लिंक हैंडलर के रूप में सेट करें</string>
+    <string name="about_app">PhishGuard के बारे में</string>
+    <string name="app_version">ऐप संस्करण: %1$s (%2$d)</string>
+
+    <!-- Result & Technical Details -->
+    <string name="analysis_result">विश्लेषण परिणाम</string>
+    <string name="key_reasons_identified">पहचाने गए मुख्य कारण</string>
+    <string name="detected_target_url">पहचाना गया लक्ष्य URL</string>
+    <string name="threat_intel_header">खतरा इंटेलिजेंस / PhishDestroy</string>
+    <string name="reasons_label">कारण:</string>
+    <string name="verification_unavailable_warning">सत्यापन उपलब्ध नहीं है - सावधानी के साथ आगे बढ़ें।</string>
+    <string name="not_completely_safe_warning">यह इस बात की गारंटी नहीं देता कि संदेश पूरी तरह से सुरक्षित है</string>
+
+    <!-- Blocked & Link Gate Screen -->
+    <string name="security_alert">सुरक्षा चेतावनी</string>
+    <string name="link_blocked">लिंक ब्लॉक किया गया</string>
+    <string name="link_blocked_desc">यह लिंक असुरक्षित प्रतीत होता है, इसलिए हमने इसे खुलने से पहले रोक दिया।</string>
+    <string name="blocked_target_link">ब्लॉक किया गया लक्ष्य लिंक</string>
+    <string name="risk_indicators_triggered">जोखिम संकेतक ट्रिगर हुए</string>
+    <string name="checking_link_security">इस लिंक की जाँच हो रही है...</string>
+    <string name="link_gate_title">PhishGuard लिंक गेट</string>
+    <string name="high_risk_gate_desc">इस लिंक की पहचान दुर्भावनापूर्ण या उच्च जोखिम वाले फ़िशिंग खतरे के रूप में की गई थी।</string>
+    <string name="suspicious_gate_title">संदिग्ध लिंक चेतावनी</string>
+    <string name="suspicious_gate_desc">सावधानी बरतें। इस लिंक में संदिग्ध विशेषताएं या असत्यापित डोमेन पैटर्न हैं।</string>
+    <string name="low_risk_gate_title">लिंक कम जोखिम वाला प्रतीत होता है</string>
+    <string name="low_risk_gate_desc">इस लिंक के लिए कोई दुर्भावनापूर्ण संकेतक या खतरे की सूची नहीं पाई गई।</string>
+    <string name="continue_to_webpage">वेबपेज पर जारी रखें</string>
+    <string name="sec_check_unavailable">सुरक्षा जाँच उपलब्ध नहीं है</string>
+    <string name="sec_check_unavailable_desc">इस समय लिंक सुरक्षा की पुष्टि नहीं की जा सकी (%1$s)। सुरक्षा के लिए स्वचालित रूप से खोलना ब्लॉक कर दिया गया है।</string>
+    <string name="unsupported_scheme">असमर्थित या अविश्वसनीय योजना</string>
+    <string name="unsupported_scheme_desc">PhishGuard लिंक गेट केवल मानक वेब URL (http/https) का निरीक्षण करता है। योजना \'%1$s\' ब्लॉक कर दी गई थी।</string>
+    <string name="no_browser_available">कोई बाहरी ब्राउज़र उपलब्ध नहीं है</string>
+    <string name="no_browser_available_desc">PhishGuard ने इस लिंक का निरीक्षण किया, लेकिन इसे खोलने के लिए डिवाइस पर कोई अलग वेब ब्राउज़र (जैसे क्रोम या सैमसंग इंटरनेट) नहीं मिला।</string>
+    <string name="suspicious_link">संदिग्ध लिंक</string>
+
+    <!-- History Screen -->
+    <string name="analysis_history">विश्लेषण इतिहास</string>
+    <string name="no_messages_checked">अभी तक कोई संदेश नहीं जाँचा गया।</string>
+
+    <!-- Report Confirmation -->
+    <string name="report_submitted">रिपोर्ट जमा की गई</string>
+    <string name="threat_reported">खतरे की रिपोर्ट की गई।</string>
+    <string name="report_id_format">रिपोर्ट ID: %1$s</string>
+    <string name="threat_type_format">खतरे का प्रकार: %1$s</string>
+
+    <!-- Analyzing Screen & Steps -->
+    <string name="full_analysis_unavailable">पूर्ण सुरक्षा विश्लेषण वर्तमान में उपलब्ध नहीं है।</string>
+    <string name="continue_without_analysis">पूर्ण विश्लेषण के बिना जारी रखें</string>
+    <string name="step_checking_msg">इस संदेश की जाँच हो रही है...</string>
+    <string name="step_analyzing_msg">संदेश का विश्लेषण किया जा रहा है</string>
+    <string name="step_checking_link">लिंक की जाँच की जा रही है</string>
+    <string name="step_verifying_sender">प्रेषक का सत्यापन किया जा रहा है</string>
+
+    <!-- Verification Sheet -->
+    <string name="verification_guide_title">स्वतंत्र सत्यापन गाइड</string>
+    <string name="verification_guide_text">1. संदेश में शामिल फोन नंबरों या लिंक का उपयोग न करें।\n2. सीधे उसका वेब पता टाइप करके आधिकारिक वेबसाइट पर जाएँ।\n3. सत्यापित पोर्टलों (जैसे संचार साथी / चक्षु पोर्टल) पर सूचीबद्ध आधिकारिक ग्राहक सहायता नंबरों पर कॉल करें।</string>
+
+    <!-- Notifications -->
+    <string name="notif_phishing_blocked">⚠️ फ़िशिंग हमला ब्लॉक किया गया</string>
+    <string name="notif_suspicious_detected">🧐 संदिग्ध संदेश पहचाना गया</string>
+    <string name="notif_safe_received">✓ सुरक्षित संदेश प्राप्त हुआ</string>
+    <string name="notif_body_format">प्रेषक: %1$s\nकारण: %2$s</string>
+    <string name="notif_text_format">%1$s से: निरीक्षण करने के लिए क्लिक करें।</string>
+
+    <!-- Permission Rationale -->
+    <string name="perm_rationale_title">SMS और संपर्क सुरक्षा अनुमतियाँ</string>
+    <string name="perm_rationale_desc">PhishGuard फ़िशिंग लिंक के लिए आने वाले संदेशों को स्कैन करने और प्रेषक नामों को सटीक रूप से प्रदर्शित करने के लिए SMS और संपर्क अनुमतियों का उपयोग करता है। यह अनुमति देना वैकल्पिक है।</string>
+    <string name="perm_rationale_confirm">अनुमति प्रॉम्प्ट पर जारी रखें</string>
+    <string name="perm_rationale_skip">अभी के लिए छोड़ें</string>
+</resources>

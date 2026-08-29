@@ -58,24 +58,21 @@ fun SancharSaathiNavGraph(
     if (showPermissionRationale) {
         AlertDialog(
             onDismissRequest = { showPermissionRationale = false },
-            title = { Text("SMS & Contacts Protection Permissions") },
+            title = { Text(androidx.compose.ui.res.stringResource(id = com.sancharsaathi.app.R.string.perm_rationale_title)) },
             text = {
-                Text(
-                    "SancharSaathi uses SMS and Contact permissions to scan incoming messages for phishing links and display sender names accurately. " +
-                    "Granting this permission is optional — Demo Mode and Share-to-App will continue to work regardless."
-                )
+                Text(androidx.compose.ui.res.stringResource(id = com.sancharsaathi.app.R.string.perm_rationale_desc))
             },
             confirmButton = {
                 TextButton(onClick = {
                     showPermissionRationale = false
                     onRequestSmsPermissions()
                 }) {
-                    Text("Continue to Permission Prompt")
+                    Text(androidx.compose.ui.res.stringResource(id = com.sancharsaathi.app.R.string.perm_rationale_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPermissionRationale = false }) {
-                    Text("Skip for Now")
+                    Text(androidx.compose.ui.res.stringResource(id = com.sancharsaathi.app.R.string.perm_rationale_skip))
                 }
             }
         )

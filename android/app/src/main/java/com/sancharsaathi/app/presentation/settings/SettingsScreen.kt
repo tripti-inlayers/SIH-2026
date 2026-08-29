@@ -1,5 +1,6 @@
 package com.sancharsaathi.app.presentation.settings
 
+import android.content.Intent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,15 +10,17 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.sancharsaathi.app.BuildConfig
+import com.sancharsaathi.app.R
+import com.sancharsaathi.app.data.local.AppLanguage
 import com.sancharsaathi.app.data.local.ConnectionMode
 import com.sancharsaathi.app.di.AppModule
 import com.sancharsaathi.app.permissions.SmsPermissionManager
 import com.sancharsaathi.app.presentation.components.*
-import android.content.Intent
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.SocketTimeoutException
@@ -30,6 +33,8 @@ fun SettingsScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val configStore = remember { AppModule.networkConfigStore }
+    val langStore = remember { AppModule.languageConfigStore }
+    val currentLang by langStore.currentLanguageFlow.collectAsState()
     val hasPermission = remember { SmsPermissionManager.hasSmsPermissions(context) }
 
     var selectedMode by remember { mutableStateOf(configStore.connectionMode) }
@@ -49,7 +54,7 @@ fun SettingsScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Settings & Configuration", onBackClick = onNavigateBack)
+            AppTopBar(title = stringResource(id = R.string.settings_title), onBackClick = onNavigateBack)
         }
     ) { padding ->
         LazyColumn(
@@ -58,10 +63,65 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            // Section 0: Language Selection
+            item {
+                Text(
+                    text = stringResource(id = R.string.language_section),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { langStore.currentLanguage = AppLanguage.ENGLISH }
+                        ) {
+                            RadioButton(
+                                selected = currentLang == AppLanguage.ENGLISH,
+                                onClick = { langStore.currentLanguage = AppLanguage.ENGLISH }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.lang_english),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { langStore.currentLanguage = AppLanguage.HINDI }
+                        ) {
+                            RadioButton(
+                                selected = currentLang == AppLanguage.HINDI,
+                                onClick = { langStore.currentLanguage = AppLanguage.HINDI }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.lang_hindi),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
             // Section 1: Backend Connection Settings
             item {
                 Text(
-                    text = "Backend Connection Settings",
+                    text = stringResource(id = R.string.backend_settings),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -72,7 +132,7 @@ fun SettingsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Current Base URL: ${configStore.getBaseUrl()}",
+                            text = stringResource(id = R.string.current_base_url, configStore.getBaseUrl()),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
@@ -80,7 +140,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         // Connection Mode Selectors
-                        Text(text = "Connection Mode:", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Text(text = stringResource(id = R.string.connection_mode), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable {
                             selectedMode = ConnectionMode.USB
                             configStore.connectionMode = ConnectionMode.USB
@@ -94,8 +154,8 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
-                                Text(text = "USB / ADB Mode", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                                Text(text = "Uses http://127.0.0.1:8000/ (Requires `adb reverse tcp:8000 tcp:8000`)", style = MaterialTheme.typography.bodySmall)
+                                Text(text = stringResource(id = R.string.usb_mode), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text(text = stringResource(id = R.string.usb_mode_desc), style = MaterialTheme.typography.bodySmall)
                             }
                         }
 
@@ -114,8 +174,8 @@ fun SettingsScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Column {
-                                Text(text = "Wi-Fi Mode", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                                Text(text = "Connects directly to laptop LAN IP across local Wi-Fi", style = MaterialTheme.typography.bodySmall)
+                                Text(text = stringResource(id = R.string.wifi_mode), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                Text(text = stringResource(id = R.string.wifi_mode_desc), style = MaterialTheme.typography.bodySmall)
                             }
                         }
 
@@ -127,7 +187,7 @@ fun SettingsScreen(
                                     wifiHostText = it
                                     saveConfig()
                                 },
-                                label = { Text("Laptop Host / IP") },
+                                label = { Text(stringResource(id = R.string.laptop_host)) },
                                 placeholder = { Text("192.168.29.24") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
@@ -139,7 +199,7 @@ fun SettingsScreen(
                                     wifiPortText = it
                                     saveConfig()
                                 },
-                                label = { Text("FastAPI Port") },
+                                label = { Text(stringResource(id = R.string.fastapi_port)) },
                                 placeholder = { Text("8000") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -224,7 +284,7 @@ fun SettingsScreen(
                             enabled = !isTestingConnection,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(if (isTestingConnection) "Testing..." else "Test Connection")
+                            Text(if (isTestingConnection) stringResource(id = R.string.testing_connection) else stringResource(id = R.string.test_connection))
                         }
 
                         if (connectionTestStatus != null) {
@@ -251,7 +311,7 @@ fun SettingsScreen(
             // Section 2: Permissions
             item {
                 Text(
-                    text = "SMS & Contacts Permissions",
+                    text = stringResource(id = R.string.sms_contacts_permissions),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -267,25 +327,25 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = "SMS & Contacts Scanning",
+                                text = stringResource(id = R.string.sms_contacts_scanning),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = if (hasPermission) "Granted" else "Not Granted",
+                                text = if (hasPermission) stringResource(id = R.string.granted) else stringResource(id = R.string.not_granted),
                                 color = if (hasPermission) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Used to scan SMS messages for scams and resolve sender phone numbers to contact names. Local pattern classification runs offline instantly.",
+                            text = stringResource(id = R.string.permissions_desc),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         if (!hasPermission) {
                             Spacer(modifier = Modifier.height(12.dp))
                             PrimaryButton(
-                                text = "Request SMS & Contact Permissions",
+                                text = stringResource(id = R.string.request_permissions_button),
                                 onClick = onRequestSmsPermissions
                             )
                         }
@@ -297,7 +357,7 @@ fun SettingsScreen(
             // Section 3: Link Protection
             item {
                 Text(
-                    text = "Link Protection",
+                    text = stringResource(id = R.string.link_protection),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -313,19 +373,19 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                text = "Web Link Security Gate",
+                                text = stringResource(id = R.string.web_link_security_gate),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "● Active",
+                                text = "● " + stringResource(id = R.string.active),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "SancharSaathi can check web links before opening them to block phishing sites, scam links, and dangerous malware redirects.",
+                            text = stringResource(id = R.string.link_gate_desc),
                             style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -349,7 +409,7 @@ fun SettingsScreen(
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Set as link handler in System Settings")
+                            Text(stringResource(id = R.string.set_as_link_handler))
                         }
                     }
                 }
@@ -359,7 +419,7 @@ fun SettingsScreen(
             // Section 4: App Info
             item {
                 Text(
-                    text = "About SancharSaathi",
+                    text = stringResource(id = R.string.about_app),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -369,9 +429,9 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(text = "App Version: ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = stringResource(id = R.string.app_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE), style = MaterialTheme.typography.bodyMedium)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "Active Base URL: ${configStore.getBaseUrl()}", style = MaterialTheme.typography.bodyMedium)
+                        Text(text = stringResource(id = R.string.active_base_url, configStore.getBaseUrl()), style = MaterialTheme.typography.bodyMedium)
                     }
                 }
             }

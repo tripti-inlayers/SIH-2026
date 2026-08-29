@@ -10,7 +10,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.AnalysisRequest
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.LoadingIndicatorStep
@@ -55,7 +57,7 @@ fun AnalyzingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Full security analysis is currently unavailable.",
+                        text = stringResource(id = R.string.full_analysis_unavailable),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -67,7 +69,7 @@ fun AnalyzingScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     PrimaryButton(
-                        text = "Retry",
+                        text = stringResource(id = R.string.retry),
                         onClick = { viewModel.analyze(request) }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
@@ -77,7 +79,7 @@ fun AnalyzingScreen(
                             onNavigateToResult(fallback)
                         }
                     ) {
-                        Text("Continue without full analysis")
+                        Text(stringResource(id = R.string.continue_without_analysis))
                     }
                 }
             }

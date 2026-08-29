@@ -5,10 +5,10 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
@@ -25,10 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.di.AppModule
 import com.sancharsaathi.app.domain.model.*
 import com.sancharsaathi.app.presentation.theme.SancharSaathiTheme
@@ -36,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.util.Locale
 
 sealed class LinkGateState {
     object Checking : LinkGateState()
@@ -55,15 +58,30 @@ class LinkGateActivity : ComponentActivity() {
         val incomingUri = intent?.data
 
         setContent {
-            SancharSaathiTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    LinkGateScreen(
-                        incomingUri = incomingUri,
-                        onClose = { finish() }
-                    )
+            val langStore = remember { AppModule.languageConfigStore }
+            val currentLang by langStore.currentLanguageFlow.collectAsState()
+
+            val locale = remember(currentLang) { Locale(currentLang.code) }
+            val config = remember(currentLang) {
+                Configuration(this.resources.configuration).apply {
+                    setLocale(locale)
+                }
+            }
+            val contextWithLocale = remember(currentLang) {
+                this.createConfigurationContext(config)
+            }
+
+            CompositionLocalProvider(LocalContext provides contextWithLocale) {
+                SancharSaathiTheme {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        LinkGateScreen(
+                            incomingUri = incomingUri,
+                            onClose = { finish() }
+                        )
+                    }
                 }
             }
         }
@@ -171,7 +189,7 @@ fun LinkGateScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "SancharSaathi Link Gate",
+                            text = stringResource(id = R.string.link_gate_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
@@ -179,7 +197,7 @@ fun LinkGateScreen(
                 },
                 actions = {
                     IconButton(onClick = onClose) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
+                        Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(id = R.string.close))
                     }
                 }
             )
@@ -201,7 +219,7 @@ fun LinkGateScreen(
                         CircularProgressIndicator(modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Checking link security...",
+                            text = stringResource(id = R.string.checking_link_security),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -304,7 +322,7 @@ fun HighRiskGateContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "DANGEROUS LINK BLOCKED",
+                    text = stringResource(id = R.string.dangerous_link_blocked),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onErrorContainer,
@@ -312,7 +330,7 @@ fun HighRiskGateContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "This link was identified as malicious or a high-risk phishing threat.",
+                    text = stringResource(id = R.string.high_risk_gate_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     textAlign = TextAlign.Center
@@ -344,7 +362,7 @@ fun HighRiskGateContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Risk Score:", fontWeight = FontWeight.Bold)
+                    Text(stringResource(id = R.string.risk_score_label), fontWeight = FontWeight.Bold)
                     Text(
                         "${result.riskScore}/100 — ${result.riskLevel}",
                         fontWeight = FontWeight.Bold,
@@ -353,7 +371,7 @@ fun HighRiskGateContent(
                 }
                 if (result.reasons.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Reasons:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(stringResource(id = R.string.reasons_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     result.reasons.forEach { reason ->
                         Text("• $reason", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -382,7 +400,7 @@ fun HighRiskGateContent(
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("GO BACK (SAFE)", fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.back_safe), fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -418,7 +436,7 @@ fun SuspiciousGateContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "SUSPICIOUS LINK WARNING",
+                    text = stringResource(id = R.string.suspicious_gate_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
@@ -426,7 +444,7 @@ fun SuspiciousGateContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Exercise caution. This link contains suspicious characteristics or unverified domain patterns.",
+                    text = stringResource(id = R.string.suspicious_gate_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     textAlign = TextAlign.Center
@@ -457,12 +475,12 @@ fun SuspiciousGateContent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Risk Score:", fontWeight = FontWeight.Bold)
-                    Text("${result.riskScore}/100 — SUSPICIOUS", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+                    Text(stringResource(id = R.string.risk_score_label), fontWeight = FontWeight.Bold)
+                    Text("${result.riskScore}/100 — ${stringResource(id = R.string.risk_suspicious)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
                 }
                 if (result.reasons.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Reasons:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(stringResource(id = R.string.reasons_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     result.reasons.forEach { reason ->
                         Text("• $reason", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -479,7 +497,7 @@ fun SuspiciousGateContent(
                     .weight(1f)
                     .height(48.dp)
             ) {
-                Text("Go Back")
+                Text(stringResource(id = R.string.back))
             }
             Spacer(modifier = Modifier.width(12.dp))
             Button(
@@ -489,7 +507,7 @@ fun SuspiciousGateContent(
                     .weight(1f)
                     .height(48.dp)
             ) {
-                Text("Continue Anyway", fontWeight = FontWeight.Bold)
+                Text(stringResource(id = R.string.continue_anyway), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -526,7 +544,7 @@ fun LowRiskGateContent(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "LINK APPEARS LOW RISK",
+                    text = stringResource(id = R.string.low_risk_gate_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -534,7 +552,7 @@ fun LowRiskGateContent(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "No malicious indicators or threat listings were detected for this link.",
+                    text = stringResource(id = R.string.low_risk_gate_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     textAlign = TextAlign.Center
@@ -566,8 +584,8 @@ fun LowRiskGateContent(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Risk Evaluation:", fontWeight = FontWeight.Bold)
-                Text("${result.riskScore}/100 — LOW RISK", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(stringResource(id = R.string.risk_score_label), fontWeight = FontWeight.Bold)
+                Text("${result.riskScore}/100 — ${stringResource(id = R.string.risk_low)}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
 
@@ -579,7 +597,7 @@ fun LowRiskGateContent(
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            Text("CONTINUE TO WEBPAGE", fontWeight = FontWeight.Bold)
+            Text(stringResource(id = R.string.continue_to_webpage), fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
         }
@@ -604,14 +622,14 @@ fun UnavailableGateContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "SECURITY CHECK UNAVAILABLE",
+            text = stringResource(id = R.string.sec_check_unavailable),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Could not verify link security at this time ($reason). Automated opening has been blocked for safety.",
+            text = stringResource(id = R.string.sec_check_unavailable_desc, reason),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -623,7 +641,7 @@ fun UnavailableGateContent(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Go Back (Safe)")
+            Text(stringResource(id = R.string.back_safe))
         }
     }
 }
@@ -646,7 +664,7 @@ fun UnsupportedSchemeContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "UNSUPPORTED OR UNTRUSTED SCHEME",
+            text = stringResource(id = R.string.unsupported_scheme),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error,
@@ -654,7 +672,7 @@ fun UnsupportedSchemeContent(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "SancharSaathi Link Gate only inspects standard web URLs (http/https). Scheme '$scheme' was blocked.",
+            text = stringResource(id = R.string.unsupported_scheme_desc, scheme),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -667,7 +685,7 @@ fun UnsupportedSchemeContent(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Go Back")
+            Text(stringResource(id = R.string.back))
         }
     }
 }
@@ -690,14 +708,14 @@ fun NoExternalBrowserContent(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "NO EXTERNAL BROWSER AVAILABLE",
+            text = stringResource(id = R.string.no_browser_available),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "SancharSaathi inspected this link, but no separate web browser (such as Chrome or Samsung Internet) was found on the device to open it.",
+            text = stringResource(id = R.string.no_browser_available_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -709,7 +727,7 @@ fun NoExternalBrowserContent(
                 .fillMaxWidth()
                 .height(48.dp)
         ) {
-            Text("Go Back")
+            Text(stringResource(id = R.string.back))
         }
     }
 }
@@ -736,7 +754,6 @@ fun openExternalBrowser(context: Context, originalUri: Uri, onNoBrowser: () -> U
             candidates.addAll(allList)
         } catch (e: Exception) { }
 
-        // Filter out SancharSaathi package
         val externalCandidate = candidates.firstOrNull {
             it.activityInfo != null && it.activityInfo.packageName != context.packageName
         }
@@ -756,7 +773,6 @@ fun openExternalBrowser(context: Context, originalUri: Uri, onNoBrowser: () -> U
             Log.d("LinkGate", "FORWARD_SUCCESS")
             (context as? Activity)?.finish()
         } else {
-            // Check known browser packages directly as fallback
             val knownBrowsers = listOf(
                 "com.android.chrome",
                 "com.sec.android.app.sbrowser",
@@ -798,6 +814,5 @@ fun openExternalBrowser(context: Context, originalUri: Uri, onNoBrowser: () -> U
         onNoBrowser()
     } catch (e: Exception) {
         Log.e("LinkGate", "Error opening external browser: ${e.message}", e)
-        onNoBrowser()
     }
 }

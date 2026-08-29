@@ -7,11 +7,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.RiskLevel
 import com.sancharsaathi.app.presentation.theme.RiskColors
 
@@ -31,7 +33,7 @@ fun RiskBadge(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "Analyzing...",
+                text = stringResource(id = R.string.analyzing_badge),
                 color = RiskColors.lowText,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
@@ -49,7 +51,7 @@ fun RiskBadge(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "Analysis Unavailable",
+                text = stringResource(id = R.string.analysis_unavailable_badge),
                 color = RiskColors.lowText,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp
@@ -58,12 +60,13 @@ fun RiskBadge(
         return
     }
 
-    val (bgColor, textColor, labelText) = when (riskLevel) {
-        RiskLevel.LOW -> Triple(RiskColors.lowSurface, RiskColors.lowText, "Low Risk")
-        RiskLevel.SUSPICIOUS -> Triple(RiskColors.suspiciousSurface, RiskColors.suspiciousText, "Looks Suspicious")
-        RiskLevel.HIGH -> Triple(RiskColors.highSurface, RiskColors.highText, "High Risk")
+    val (bgColor, textColor, labelRes) = when (riskLevel) {
+        RiskLevel.LOW -> Triple(RiskColors.lowSurface, RiskColors.lowText, R.string.risk_low)
+        RiskLevel.SUSPICIOUS -> Triple(RiskColors.suspiciousSurface, RiskColors.suspiciousText, R.string.risk_suspicious)
+        RiskLevel.HIGH -> Triple(RiskColors.highSurface, RiskColors.highText, R.string.risk_high)
     }
 
+    val labelText = stringResource(id = labelRes)
     val announcementText = "$labelText, score $riskScore out of 100"
 
     Row(

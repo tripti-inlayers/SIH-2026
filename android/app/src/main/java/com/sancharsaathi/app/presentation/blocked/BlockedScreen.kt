@@ -8,8 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.*
 import com.sancharsaathi.app.presentation.result.TechnicalDetailsSection
@@ -25,7 +27,7 @@ fun BlockedScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Security Alert", onBackClick = onNavigateBack)
+            AppTopBar(title = stringResource(id = R.string.security_alert), onBackClick = onNavigateBack)
         }
     ) { padding ->
         LazyColumn(
@@ -47,14 +49,14 @@ fun BlockedScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Link blocked.",
+                        text = stringResource(id = R.string.link_blocked),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = RiskColors.highText
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "This link appears unsafe, so we stopped it before it opened.",
+                        text = stringResource(id = R.string.link_blocked_desc),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -67,7 +69,7 @@ fun BlockedScreen(
             if (result.detectedUrl != null) {
                 item {
                     Text(
-                        text = "Blocked Target Link",
+                        text = stringResource(id = R.string.blocked_target_link),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -90,7 +92,7 @@ fun BlockedScreen(
 
             item {
                 Text(
-                    text = "Risk Indicators Triggered",
+                    text = stringResource(id = R.string.risk_indicators_triggered),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -116,17 +118,17 @@ fun BlockedScreen(
 
             item {
                 PrimaryButton(
-                    text = "Report Threat",
+                    text = stringResource(id = R.string.report_threat),
                     onClick = onNavigateToReport
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 SecondaryButton(
-                    text = if (showTechnicalDetails) "Hide Details" else "View Details",
+                    text = if (showTechnicalDetails) stringResource(id = R.string.hide_details) else stringResource(id = R.string.view_details),
                     onClick = { showTechnicalDetails = !showTechnicalDetails }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 SecondaryButton(
-                    text = "Go Back",
+                    text = stringResource(id = R.string.back),
                     onClick = onNavigateBack
                 )
             }

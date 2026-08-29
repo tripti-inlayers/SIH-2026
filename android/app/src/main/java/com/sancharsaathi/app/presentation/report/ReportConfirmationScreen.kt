@@ -10,8 +10,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.sancharsaathi.app.R
 import com.sancharsaathi.app.domain.model.RiskResult
 import com.sancharsaathi.app.presentation.components.AppTopBar
 import com.sancharsaathi.app.presentation.components.ErrorState
@@ -33,7 +35,7 @@ fun ReportConfirmationScreen(
 
     Scaffold(
         topBar = {
-            AppTopBar(title = "Report Submitted")
+            AppTopBar(title = stringResource(id = R.string.report_submitted))
         }
     ) { padding ->
         Box(
@@ -67,19 +69,19 @@ fun ReportConfirmationScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "Threat reported.",
+                            text = stringResource(id = R.string.threat_reported),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Report ID: ${report.reportId}",
+                            text = stringResource(id = R.string.report_id_format, report.reportId),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Threat Type: ${report.threatType}",
+                            text = stringResource(id = R.string.threat_type_format, report.threatType),
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Spacer(modifier = Modifier.height(16.dp))
@@ -91,7 +93,7 @@ fun ReportConfirmationScreen(
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Spacer(modifier = Modifier.height(32.dp))
-                        PrimaryButton(text = "Done", onClick = onNavigateHome)
+                        PrimaryButton(text = stringResource(id = R.string.done), onClick = onNavigateHome)
                     }
                 }
             }
